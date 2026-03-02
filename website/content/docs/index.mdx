@@ -3,56 +3,149 @@ title: Aegis Documentation
 description: Self-hosted personal intelligence platform built on OpenClaw. Aggregate financial, calendar, health, and social data — surfaced through AI agents via WhatsApp.
 ---
 
-Welcome to the Aegis documentation. Aegis is a self-hosted personal intelligence platform that aggregates data from financial accounts, calendars, LMS platforms, health devices, and social media — then surfaces actionable insights through WhatsApp via AI agents.
+# Aegis
+
+Self-hosted personal intelligence platform built on [OpenClaw](https://openclaw.ai). Aggregate financial, calendar, health, and social data — surfaced through AI agents via WhatsApp.
+
+4 Docker services. 10 integrations. Zero public ports. Everything encrypted at rest.
+
+---
+
+## Get Started
 
 <CardGrid>
   <FeatureCard
     title="Setup From Scratch"
-    description="Complete onboarding guide — VPS, Docker, integrations, WhatsApp pairing."
+    description="Complete onboarding — Docker, OpenClaw, WhatsApp pairing, and all integrations."
     href="/docs/getting-started/setup-from-scratch"
-  />
-  <FeatureCard
-    title="Architecture Overview"
-    description="How the 4-service architecture works — OpenClaw, data-api, PostgreSQL, cloudflared."
-    href="/docs/architecture/overview"
-  />
-  <FeatureCard
-    title="Local Development"
-    description="Dev setup, testing, and adding integrations, skills, and hooks."
-    href="/docs/development/local-dev"
-  />
-  <FeatureCard
-    title="Production Deployment"
-    description="Deploy to a Hetzner VPS behind Cloudflare Tunnel with zero public ports."
-    href="/docs/deployment/production"
-  />
-  <FeatureCard
-    title="Security Model"
-    description="Threat model, AES-256-GCM encryption, hash-chained audit log, and PII redaction."
-    href="/docs/security/threat-model"
+    icon="rocket"
   />
   <FeatureCard
     title="OpenClaw Guide"
-    description="Understand the OpenClaw platform that powers Aegis agents and automation."
+    description="Understand the AI agent platform that powers Aegis."
     href="/docs/getting-started/openclaw-guide"
+    icon="brain"
   />
 </CardGrid>
 
-## What is Aegis?
+## Architecture
 
-Aegis runs on a single VPS with 4 Docker services:
+<CardGrid>
+  <FeatureCard
+    title="System Overview"
+    description="The 4-service Docker stack, data flow, encryption model, and network architecture."
+    href="/docs/architecture/overview"
+    icon="layers"
+  />
+  <FeatureCard
+    title="AI Agents"
+    description="4 agents with different roles — interactive assistant, sync, briefings, and content."
+    href="/docs/architecture/agents"
+    icon="bot"
+  />
+  <FeatureCard
+    title="Skills"
+    description="8 SKILL.md files that teach agents how to query data via web_fetch."
+    href="/docs/architecture/skills"
+    icon="zap"
+  />
+  <FeatureCard
+    title="Hooks"
+    description="TypeScript event interceptors — PII redaction, audit logging, budget tracking."
+    href="/docs/architecture/hooks"
+    icon="shield"
+  />
+</CardGrid>
 
-- **OpenClaw Gateway** — the brain. Manages AI agents, scheduling (cron), LLM calls, WhatsApp delivery, web UI, and agent memory.
-- **Data API** — encrypted persistence layer. Stores, encrypts, and retrieves data from 10 integrations.
-- **PostgreSQL** — the database with pgvector for embeddings.
-- **cloudflared** — zero-trust tunnel. No public ports exposed.
+## Integrations
 
-Everything runs behind Cloudflare Tunnel with zero public attack surface. Security is the #1 architectural constraint.
+<CardGrid>
+  <FeatureCard
+    title="Plaid Banking"
+    description="Transactions, balances, recurring charges, and spending analysis."
+    href="/docs/integrations/plaid"
+    icon="wallet"
+  />
+  <FeatureCard
+    title="Schwab Investments"
+    description="Portfolio positions, performance tracking, and market data."
+    href="/docs/integrations/schwab"
+    icon="trending-up"
+  />
+  <FeatureCard
+    title="Canvas LMS"
+    description="Assignment deadlines, grades, announcements, and course tracking."
+    href="/docs/integrations/canvas"
+    icon="graduation-cap"
+  />
+  <FeatureCard
+    title="Google Calendar"
+    description="Events, conflict detection, free slot finding, and scheduling."
+    href="/docs/integrations/google-calendar"
+    icon="calendar"
+  />
+  <FeatureCard
+    title="Garmin Health"
+    description="Steps, heart rate, sleep, calories, and fitness metrics."
+    href="/docs/integrations/garmin"
+    icon="heart-pulse"
+  />
+  <FeatureCard
+    title="Social Posting"
+    description="LinkedIn and X thought-leadership content generation and publishing."
+    href="/docs/integrations/social-posting"
+    icon="share-2"
+  />
+</CardGrid>
 
-## Key Features
+## Security
 
-- **10 Data Integrations** — Plaid banking, Schwab investments, Canvas LMS, Google Calendar, Outlook, Garmin health, LinkedIn, X, and more
-- **4 AI Agents** — Interactive assistant, background sync, daily briefings, and content generation
-- **8 Skills** — Finance, calendar, LMS, health, social, content, briefing, and security
-- **3 Security Hooks** — PII redaction, budget guardrails, and hash-chained audit logging
-- **8 Scheduled Jobs** — Automated sync, briefings, content publishing, and secret rotation reminders
+<CardGrid>
+  <FeatureCard
+    title="Threat Model"
+    description="In-scope threats, network architecture, and security controls."
+    href="/docs/security/threat-model"
+    icon="shield-check"
+  />
+  <FeatureCard
+    title="Encryption"
+    description="AES-256-GCM field encryption with AAD context binding."
+    href="/docs/security/encryption"
+    icon="lock"
+  />
+  <FeatureCard
+    title="Audit Log"
+    description="SHA-256 hash-chained tamper-evident event logging."
+    href="/docs/security/audit-log"
+    icon="file-check"
+  />
+</CardGrid>
+
+## Development
+
+<CardGrid>
+  <FeatureCard
+    title="Local Development"
+    description="Running services, testing, linting, and the full dev workflow."
+    href="/docs/development/local-dev"
+    icon="terminal"
+  />
+  <FeatureCard
+    title="Adding Integrations"
+    description="How to add a new data source following the BaseIntegration pattern."
+    href="/docs/development/adding-integrations"
+    icon="plug"
+  />
+  <FeatureCard
+    title="Production Deployment"
+    description="Deploy to a Hetzner VPS behind Cloudflare Tunnel."
+    href="/docs/deployment/production"
+    icon="server"
+  />
+  <FeatureCard
+    title="Contributing"
+    description="Code conventions, PR guidelines, and the contribution workflow."
+    href="/docs/contributing"
+    icon="git-pull-request"
+  />
+</CardGrid>

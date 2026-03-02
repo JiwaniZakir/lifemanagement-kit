@@ -59,32 +59,31 @@ export function PlannerSubmitDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="glass mx-4 w-full max-w-md rounded-2xl p-6">
-        <h3 className="mb-1 text-lg font-semibold text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="glass mx-4 w-full max-w-md p-6">
+        <h3 className="mb-1 text-base font-medium text-white">
           Submit to Community
         </h3>
-        <p className="mb-4 text-sm text-zinc-400">
-          This will create a GitHub issue on the Aegis repository with your
-          feature request and the AI-generated plan.
+        <p className="mb-4 text-xs font-light text-[#ffffff80]">
+          Creates a GitHub issue with your feature request and the AI-generated plan.
         </p>
 
         {result?.url ? (
           <div className="space-y-3">
-            <p className="text-sm text-green-400">
-              Issue created successfully!
+            <p className="text-xs text-green-400/80">
+              Issue created successfully.
             </p>
             <a
               href={result.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-sm text-[#7c6aef] underline"
+              className="block text-xs text-[#7c6aef] underline"
             >
               View on GitHub
             </a>
             <button
               onClick={onClose}
-              className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/10"
+              className="w-full rounded-lg border border-[#ffffff14] px-4 py-2 text-xs text-[#ffffffcc] transition-all hover:border-[#ffffff26]"
             >
               Close
             </button>
@@ -97,22 +96,22 @@ export function PlannerSubmitDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-zinc-500 outline-none focus:border-[#7c6aef]/50"
+              className="w-full rounded-lg border border-[#ffffff14] bg-[#ffffff08] px-4 py-2.5 text-sm font-light text-white placeholder-[#ffffff4d] outline-none focus:border-[#7c6aef40]"
             />
             {result?.error && (
-              <p className="text-sm text-red-400">{result.error}</p>
+              <p className="text-xs text-red-400/80">{result.error}</p>
             )}
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-lg bg-white/5 px-4 py-2 text-sm text-zinc-300 transition-colors hover:bg-white/10"
+                className="flex-1 rounded-lg border border-[#ffffff14] px-4 py-2 text-xs text-[#ffffffcc] transition-all hover:border-[#ffffff26]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!name.trim() || submitting}
-                className="flex-1 rounded-lg bg-[#7c6aef] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6b5ce0] disabled:opacity-50"
+                className="flex-1 rounded-lg bg-white/90 px-4 py-2 text-xs font-medium text-black transition-all hover:bg-white disabled:opacity-40"
               >
                 {submitting ? 'Submitting...' : 'Submit'}
               </button>

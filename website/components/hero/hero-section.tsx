@@ -3,33 +3,32 @@ import { GradientOrb } from './gradient-orb';
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 pt-14 text-center">
+    <section className="relative flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
       <GradientOrb />
-      <h1 className="max-w-3xl text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-7xl">
-        Your life,{' '}
-        <span className="bg-gradient-to-r from-[#7c6aef] to-[#a78bfa] bg-clip-text text-transparent">
-          one AI away
-        </span>
+
+      {/* Logo / title */}
+      <h1 className="animate-fade-up text-[clamp(2.5rem,6vw,4.5rem)] font-extralight tracking-tight text-white">
+        Aegis
       </h1>
-      <p className="mt-6 max-w-xl text-lg font-light leading-relaxed text-zinc-400">
-        Self-hosted personal intelligence platform. Aggregate financial, calendar,
-        health, and social data — surfaced through AI agents via WhatsApp.
+
+      <p className="animate-fade-up-delay mt-4 max-w-md text-sm font-light leading-relaxed text-[#ffffff99]">
+        Self-hosted personal intelligence. Financial accounts, calendars, health,
+        and social — surfaced through AI agents on WhatsApp.
       </p>
-      <div className="mt-8 flex gap-4">
+
+      <div className="animate-fade-up-delay-2 mt-8 flex items-center gap-4">
         <Link
-          href="/docs"
-          className="rounded-lg bg-[#7c6aef] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6b5ce0]"
+          href="/docs/getting-started/setup-from-scratch"
+          className="rounded-lg bg-white/90 px-5 py-2 text-xs font-medium text-black transition-all hover:bg-white"
         >
           Get Started
         </Link>
-        <a
-          href="https://github.com/JiwaniZakir/lifemanagement-kit"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-lg border border-white/10 px-6 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
+        <Link
+          href="/docs"
+          className="rounded-lg border border-[#ffffff1a] px-5 py-2 text-xs font-medium text-[#ffffffcc] transition-all hover:border-[#ffffff33] hover:text-white"
         >
-          GitHub
-        </a>
+          Documentation
+        </Link>
       </div>
     </section>
   );

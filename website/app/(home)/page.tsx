@@ -4,10 +4,12 @@ import { PlannerChatbox } from '@/components/planner/planner-chatbox';
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#0a0a0f]">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-black">
+      <div className="flex w-full flex-1 flex-col items-center justify-center">
+        <HeroSection />
+        <PlannerChatbox />
+      </div>
       <NavBar />
-      <HeroSection />
-      <PlannerChatbox />
     </main>
   );
 }

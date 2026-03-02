@@ -3,11 +3,14 @@
 @import 'fumadocs-ui/css/preset.css';
 
 @theme {
-  --color-aegis-bg: #0a0a0f;
-  --color-aegis-surface: #111118;
-  --color-aegis-border: #1e1e2e;
-  --color-aegis-muted: #6b6b8d;
-  --color-aegis-text: #e4e4ed;
+  --color-aegis-bg: #000000;
+  --color-aegis-surface: #0a0a0f;
+  --color-aegis-surface-2: #111118;
+  --color-aegis-border: #ffffff0d;
+  --color-aegis-border-hover: #ffffff1a;
+  --color-aegis-muted: #ffffff99;
+  --color-aegis-text: #ffffffcc;
+  --color-aegis-text-strong: #ffffff;
   --color-aegis-accent: #7c6aef;
   --color-aegis-accent-dim: #5a4dbf;
   --color-aegis-glow: #8b7cf7;
@@ -15,40 +18,71 @@
   --font-manrope: 'Manrope', sans-serif;
 }
 
-/* Landing page dark overrides */
-.landing-dark {
-  --fd-background: var(--color-aegis-bg);
+/* ── Fumadocs dark theme overrides ── */
+:root {
+  --fd-background: #000000;
+  --fd-background-depth: #0a0a0f;
+  --fd-muted: #ffffff14;
+  --fd-muted-foreground: #ffffff80;
+  --fd-card: #0a0a0f;
+  --fd-card-foreground: #ffffffcc;
+  --fd-border: #ffffff0d;
+  --fd-foreground: #ffffffcc;
+  --fd-primary: #7c6aef;
+  --fd-primary-foreground: #ffffff;
+  --fd-accent: #ffffff08;
+  --fd-accent-foreground: #ffffffcc;
+  --fd-popover: #0a0a0f;
+  --fd-popover-foreground: #ffffffcc;
+  --fd-secondary: #ffffff08;
+  --fd-secondary-foreground: #ffffffcc;
+  --fd-ring: #7c6aef40;
 }
 
-/* Gradient orb animation */
-@keyframes orb-float {
+/* Force dark mode globally */
+html {
+  color-scheme: dark;
+}
+
+/* ── Gradient orb ── */
+@keyframes orb-breathe {
   0%, 100% {
     transform: translate(-50%, -50%) scale(1);
-    opacity: 0.4;
+    opacity: 0.35;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.15);
-    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 0.5;
   }
 }
 
-@keyframes orb-rotate {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(360deg); }
+@keyframes orb-hue {
+  from { filter: hue-rotate(0deg) blur(80px); }
+  to { filter: hue-rotate(360deg) blur(80px); }
 }
 
 .gradient-orb {
-  animation: orb-float 8s ease-in-out infinite, orb-rotate 20s linear infinite;
+  animation: orb-breathe 8s ease-in-out infinite, orb-hue 25s linear infinite;
 }
 
-/* Glassmorphism */
+/* ── Glass morphism ── */
 .glass {
-  background: rgba(17, 17, 24, 0.6);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(124, 106, 239, 0.15);
+  background: #ffffff0d;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #ffffff14;
+  border-radius: 1.3em;
 }
 
-/* Streaming text cursor */
+.glass-strong {
+  background: #ffffff1a;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #ffffff1a;
+  border-radius: 1.3em;
+}
+
+/* ── Streaming text cursor ── */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -59,4 +93,87 @@
   animation: blink 1s step-end infinite;
   color: var(--color-aegis-accent);
   margin-left: 2px;
+}
+
+/* ── Fade-in animation ── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s ease-out forwards;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.6s ease-out 0.15s forwards;
+  opacity: 0;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.6s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-fade-up-delay-3 {
+  animation: fade-up 0.6s ease-out 0.45s forwards;
+  opacity: 0;
+}
+
+/* ── Fumadocs sidebar dark ── */
+[data-theme="dark"],
+.dark {
+  --fd-background: #000000;
+  --fd-background-depth: #0a0a0f;
+}
+
+/* Make sidebar blend with dark bg */
+nav[data-component="sidebar"] {
+  background: #0a0a0f !important;
+  border-color: #ffffff0d !important;
+}
+
+/* Code blocks - darker */
+pre {
+  background: #0a0a0f !important;
+  border: 1px solid #ffffff0d !important;
+}
+
+code {
+  font-size: 0.875em;
+}
+
+/* Tables in docs */
+table {
+  font-size: 0.875rem;
+}
+
+th {
+  font-weight: 500;
+  color: #ffffff99;
+}
+
+/* Scroll bar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ffffff14;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ffffff26;
 }

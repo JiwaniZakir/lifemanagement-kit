@@ -69,6 +69,10 @@ graph TB
 
 **Data API** = the vault. Encrypted credential storage, integration API proxies, tamper-evident audit log, budget tracking. No analysis, no LLM calls, no delivery -- just stores and retrieves.
 
+<Callout type="tip" title="Key principle">
+OpenClaw IS the application. Business logic goes in Skills (SKILL.md), NOT in Python services. The data-api is persistence only — it stores, encrypts, and retrieves data.
+</Callout>
+
 ---
 
 ## The 4 Docker Services
@@ -166,6 +170,10 @@ Three isolated Docker networks:
 - **data** (internal) -- data-api and PostgreSQL (database access)
 
 ### Security Constraints
+
+<Callout type="warning" title="Zero public ports">
+Aegis exposes zero ports to the public internet. All external access flows through Cloudflare Tunnel with token-based authentication.
+</Callout>
 
 All containers run with:
 - `cap_drop: [ALL]` -- no Linux capabilities

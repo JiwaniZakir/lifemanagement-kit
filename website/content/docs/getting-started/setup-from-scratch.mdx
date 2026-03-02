@@ -5,6 +5,10 @@ description: Complete onboarding guide for going from nothing to a running Aegis
 
 This is the complete guide for going from nothing to a running Aegis instance. Read it end-to-end if you are setting up Aegis for the first time.
 
+<Callout type="tip" title="Time estimate">
+The full setup takes 15-30 minutes. If you already have Docker installed and an Anthropic API key, you can be running in under 5 minutes.
+</Callout>
+
 ---
 
 ## Table of Contents
@@ -119,6 +123,10 @@ If your system has `docker-compose` (with a hyphen) instead of `docker compose` 
 5. Copy the key -- it starts with `sk-ant-api03-`
 
 Keep this key safe. It will be stored in your `.env` file (which is never committed to Git).
+
+<Callout type="warning" title="Never commit API keys">
+The `.env` file is in `.gitignore`. Never hardcode API keys in source code or commit them to version control.
+</Callout>
 
 Estimated costs with the default Aegis configuration:
 - 4 sync jobs + 1 briefing + 1 content job per day
@@ -377,7 +385,9 @@ Canvas provides assignment deadlines, grades, and announcements from your univer
    ```
 2. Restart: `docker compose restart data-api`
 
-Note: The Garmin integration uses an unofficial library (`garminconnect`). It may break if Garmin changes their API.
+<Callout type="warning" title="Unofficial API">
+The Garmin integration uses the unofficial `garminconnect` library. It may break if Garmin changes their internal API without notice.
+</Callout>
 
 ### Apple Health
 
@@ -400,7 +410,9 @@ Apple Health data is ingested via iOS Shortcuts. There is no direct API.
    LINKEDIN_ACCESS_TOKEN=your-access-token
    ```
 
-Note: LinkedIn's API is very limited. Posting requires an approved app.
+<Callout type="info" title="API limitation">
+LinkedIn's API is very limited. Posting requires an approved app through their developer program.
+</Callout>
 
 ### X / Twitter
 
@@ -416,7 +428,9 @@ Note: LinkedIn's API is very limited. Posting requires an approved app.
    X_BEARER_TOKEN=your-bearer-token
    ```
 
-Note: X API v2 requires a paid plan ($100/month for Basic tier) for read + write access.
+<Callout type="info" title="Paid API">
+X API v2 requires a paid plan ($100/month for Basic tier) for read + write access.
+</Callout>
 
 ### Schwab (Investments)
 

@@ -30,9 +30,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={manrope.className} suppressHydrationWarning>
-      <body className="flex min-h-screen flex-col">
-        <RootProvider>{children}</RootProvider>
+    <html lang="en" className={`${manrope.className} dark`} suppressHydrationWarning>
+      <body className="flex min-h-screen flex-col bg-black text-[#ffffffcc]">
+        <RootProvider
+          theme={{
+            defaultTheme: 'dark',
+            forcedTheme: 'dark',
+          }}
+        >
+          {children}
+        </RootProvider>
       </body>
     </html>
   );

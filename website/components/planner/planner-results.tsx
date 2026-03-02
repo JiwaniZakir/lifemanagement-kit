@@ -55,17 +55,17 @@ export function PlannerResults({
   if (!text) return null;
 
   return (
-    <div className="glass mt-6 overflow-hidden rounded-xl">
+    <div className="glass mt-4 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex gap-0 overflow-x-auto border-b border-white/5">
+      <div className="flex gap-0 overflow-x-auto border-b border-[#ffffff0d]">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`shrink-0 px-4 py-2.5 text-xs font-medium transition-colors ${
+            className={`shrink-0 px-3.5 py-2.5 text-[10px] font-medium uppercase tracking-wider transition-colors ${
               activeTab === tab.key
-                ? 'border-b-2 border-[#7c6aef] text-white'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'border-b border-[#7c6aef] text-white'
+                : 'text-[#ffffff4d] hover:text-[#ffffff80]'
             }`}
           >
             {tab.label}
@@ -74,7 +74,7 @@ export function PlannerResults({
       </div>
 
       {/* Content */}
-      <div className="max-h-[500px] overflow-y-auto p-5">
+      <div className="max-h-[400px] overflow-y-auto p-5">
         <StreamingText
           text={getTabContent(text, activeTab)}
           isStreaming={isStreaming && activeTab === 'full'}
@@ -83,10 +83,10 @@ export function PlannerResults({
 
       {/* Submit button */}
       {!isStreaming && text.length > 0 && (
-        <div className="border-t border-white/5 px-5 py-3">
+        <div className="border-t border-[#ffffff0d] px-5 py-3">
           <button
             onClick={onSubmit}
-            className="rounded-lg bg-[#7c6aef]/10 px-4 py-2 text-sm font-medium text-[#7c6aef] transition-colors hover:bg-[#7c6aef]/20"
+            className="rounded-lg border border-[#ffffff14] px-4 py-2 text-xs font-light text-[#ffffffcc] transition-all hover:border-[#ffffff26] hover:text-white"
           >
             Submit to Community
           </button>

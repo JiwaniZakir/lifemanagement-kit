@@ -85,9 +85,14 @@ export function PlannerChatbox() {
   }, [prompt, isStreaming]);
 
   return (
-    <section className="mx-auto w-full max-w-3xl px-6 pb-20">
-      {/* Input */}
-      <div className="glass rounded-2xl p-1.5">
+    <section className="animate-fade-up-delay-3 mx-auto w-full max-w-xl px-6 pb-32">
+      {/* Section label */}
+      <p className="mb-3 text-center text-[10px] font-light uppercase tracking-[0.2em] text-[#ffffff4d]">
+        Feature Planner
+      </p>
+
+      {/* Glass bubble input */}
+      <div className="glass p-1">
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -97,12 +102,12 @@ export function PlannerChatbox() {
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             maxLength={2000}
             disabled={isStreaming}
-            className="flex-1 bg-transparent px-4 py-3 text-sm text-white placeholder-zinc-500 outline-none disabled:opacity-50"
+            className="flex-1 bg-transparent px-4 py-3 text-sm font-light text-white placeholder-[#ffffff4d] outline-none disabled:opacity-50"
           />
           <button
             onClick={handleSubmit}
             disabled={!prompt.trim() || isStreaming}
-            className="shrink-0 rounded-xl bg-[#7c6aef] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6b5ce0] disabled:opacity-40"
+            className="shrink-0 rounded-[0.8em] bg-white/90 px-4 py-2 text-xs font-medium text-black transition-all hover:bg-white disabled:opacity-30"
           >
             {isStreaming ? 'Planning...' : 'Plan'}
           </button>
@@ -110,7 +115,7 @@ export function PlannerChatbox() {
       </div>
 
       {error && (
-        <p className="mt-3 text-center text-sm text-red-400">{error}</p>
+        <p className="mt-3 text-center text-xs font-light text-red-400/80">{error}</p>
       )}
 
       {/* Results */}

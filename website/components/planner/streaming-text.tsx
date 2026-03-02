@@ -9,8 +9,8 @@ export function StreamingText({ text, isStreaming }: StreamingTextProps) {
   if (!text) return null;
 
   return (
-    <div className="prose prose-invert max-w-none text-sm leading-relaxed">
-      <pre className="whitespace-pre-wrap font-sans text-zinc-300">
+    <div className="max-w-none text-sm leading-relaxed">
+      <pre className="whitespace-pre-wrap font-sans text-[#ffffffcc]">
         {text}
         {isStreaming && (
           <span className="streaming-cursor" />

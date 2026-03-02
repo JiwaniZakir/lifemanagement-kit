@@ -4,6 +4,7 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: 'Aegis',
+      url: '/',
     },
     links: [
       {
