@@ -20,6 +20,13 @@ export function NavBar() {
           Docs
         </Link>
         <span className="text-[#fff3]">/</span>
+        <Link
+          href="/community"
+          className="text-[#fffc] transition-colors hover:text-white"
+        >
+          Community
+        </Link>
+        <span className="text-[#fff3]">/</span>
         <a
           href="https://github.com/JiwaniZakir/lifemanagement-kit"
           target="_blank"

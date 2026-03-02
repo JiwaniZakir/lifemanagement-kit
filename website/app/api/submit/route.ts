@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   // Early check: is GitHub submission configured?
   if (!process.env.GITHUB_TOKEN) {
     return Response.json(
-      { error: 'Community submissions are not configured.' },
+      { error: 'Community submissions are not configured.', code: 'GITHUB_NOT_CONFIGURED' },
       { status: 503 },
     );
   }
@@ -53,14 +53,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: { title: string; request: string; plan: string; submitter: string };
+  let body: {
+    title: string;
+    request: string;
+    plan: string;
+    submitter: string;
+    notes?: string;
+    diagramJson?: string;
+  };
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const { title, request: featureRequest, plan, submitter } = body;
+  const { title, request: featureRequest, plan, submitter, notes, diagramJson } = body;
 
   if (!title || !featureRequest || !plan || !submitter) {
     return Response.json(
@@ -82,6 +89,8 @@ export async function POST(request: NextRequest) {
       request: featureRequest,
       plan,
       submitter,
+      notes,
+      diagramJson,
     });
     return Response.json(result);
   } catch (error) {

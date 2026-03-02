@@ -185,6 +185,76 @@ th {
   color: #ffffff99;
 }
 
+/* ── xyflow dark theme ── */
+.xyflow-dark .react-flow__background {
+  background: #0a0a0f;
+}
+
+.xyflow-dark .react-flow__minimap {
+  background: #0a0a0f;
+}
+
+.xyflow-dark .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.15);
+}
+
+.xyflow-dark .react-flow__handle {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+}
+
+.xyflow-controls-dark .react-flow__controls-button {
+  background: #0a0a0f;
+  border-color: #ffffff0d;
+  fill: #ffffff80;
+}
+
+.xyflow-controls-dark .react-flow__controls-button:hover {
+  background: #ffffff14;
+}
+
+/* ── Proposed node pulse ── */
+@keyframes proposed-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.proposed-node-pulse {
+  animation: proposed-pulse 2s ease-in-out infinite;
+}
+
+/* ── Wizard step transition ── */
+@keyframes step-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.wizard-step-enter {
+  animation: step-enter 0.3s ease-out forwards;
+}
+
+/* ── Confetti animation ── */
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(400px) rotate(720deg);
+  }
+}
+
+.confetti-particle {
+  animation: confetti-fall 2s ease-in forwards;
+}
+
 /* Scroll bar styling */
 ::-webkit-scrollbar {
   width: 6px;

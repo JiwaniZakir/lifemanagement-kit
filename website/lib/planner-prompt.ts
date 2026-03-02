@@ -372,7 +372,38 @@ Specific test cases to write. Include test function names and what they verify.
 ### API Feasibility Check
 Explicitly confirm whether the required external API exists, its authentication method, rate limits, pricing, and any limitations. **Never hallucinate an API that doesn't exist.**
 
-Be specific and actionable. Use exact file paths. Every code block should be copy-paste ready.`;
+Be specific and actionable. Use exact file paths. Every code block should be copy-paste ready.
+
+### Machine-Readable Metadata
+
+**IMPORTANT:** At the very end of your response, include an \`aegis-meta\` fenced code block with structured JSON metadata about your plan. This enables automated visualization.
+
+\`\`\`aegis-meta
+{
+  "title": "Short Feature Title",
+  "affectedServices": ["data-api", "openclaw-gateway"],
+  "impact": "medium",
+  "newFiles": [
+    {"path": "data-api/app/models/example.py", "type": "model", "action": "create"},
+    {"path": "data-api/app/api/example.py", "type": "router", "action": "create"},
+    {"path": "skills/aegis-example/SKILL.md", "type": "skill", "action": "create"}
+  ],
+  "newDiagramNodes": [
+    {"id": "proposed-example-model", "label": "example.py", "type": "model", "status": "proposed"},
+    {"id": "proposed-example-router", "label": "example.py", "type": "router", "status": "proposed"},
+    {"id": "proposed-example-skill", "label": "aegis-example", "type": "skill", "status": "proposed"}
+  ],
+  "newDiagramEdges": [
+    {"id": "e-pg-example-model", "source": "postgres", "target": "proposed-example-model"},
+    {"id": "e-api-example-router", "source": "data-api", "target": "proposed-example-router"},
+    {"id": "e-skills-example", "source": "skills", "target": "proposed-example-skill"}
+  ]
+}
+\`\`\`
+
+Valid node types: "service", "skill", "hook", "integration", "model", "router".
+Valid file types: "model", "router", "integration", "skill", "hook", "migration", "test", "config".
+Valid parent node IDs to connect edges from: "postgres", "data-api", "integrations", "skills", "hooks", "gateway".`;
 
 // ── Compose the full system prompt from modules ────────────────────
 
@@ -411,5 +442,5 @@ export function buildPlannerPrompt(): string {
 /** Pre-built prompt for direct use */
 export const PLANNER_SYSTEM_PROMPT = buildPlannerPrompt();
 
-/** Max output tokens — increased for comprehensive plans */
-export const PLANNER_MAX_TOKENS = 8192;
+/** Max output tokens — increased for comprehensive plans with aegis-meta */
+export const PLANNER_MAX_TOKENS = 12288;
