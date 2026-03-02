@@ -15,14 +15,12 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 function extractSection(text: string, heading: string): string {
-  const patterns = [
-    new RegExp(`###?\\s*${heading}[\\s\\S]*?(?=\\n###?\\s|$)`, 'i'),
-  ];
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match) return match[0].trim();
-  }
-  return '';
+  const pattern = new RegExp(
+    `###?\\s*${heading}[\\s\\S]*?(?=\\n###?\\s[A-Z]|$)`,
+    'i',
+  );
+  const match = text.match(pattern);
+  return match ? match[0].trim() : '';
 }
 
 function getTabContent(text: string, tab: TabKey): string {
@@ -65,7 +63,7 @@ export function PlannerResults({
             className={`shrink-0 px-3.5 py-2.5 text-[10px] font-medium uppercase tracking-wider transition-colors ${
               activeTab === tab.key
                 ? 'border-b border-[#7c6aef] text-white'
-                : 'text-[#ffffff4d] hover:text-[#ffffff80]'
+                : 'text-[#fff4] hover:text-[#fff9]'
             }`}
           >
             {tab.label}
@@ -74,7 +72,7 @@ export function PlannerResults({
       </div>
 
       {/* Content */}
-      <div className="max-h-[400px] overflow-y-auto p-5">
+      <div className="max-h-[500px] overflow-y-auto p-5">
         <StreamingText
           text={getTabContent(text, activeTab)}
           isStreaming={isStreaming && activeTab === 'full'}
@@ -86,7 +84,7 @@ export function PlannerResults({
         <div className="border-t border-[#ffffff0d] px-5 py-3">
           <button
             onClick={onSubmit}
-            className="rounded-lg border border-[#ffffff14] px-4 py-2 text-xs font-light text-[#ffffffcc] transition-all hover:border-[#ffffff26] hover:text-white"
+            className="rounded-lg border border-[#ffffff14] px-4 py-2 text-[12px] font-light leading-[12px] text-[#fffc] transition-all hover:border-[#ffffff26] hover:text-white"
           >
             Submit to Community
           </button>

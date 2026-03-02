@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     messages: [
       {
         role: 'user',
-        content: `Design a complete implementation plan for this Aegis feature:\n\n${prompt}`,
+        content: `Design a complete, production-ready implementation plan for this Aegis feature:\n\n**Feature request:** ${prompt}\n\nProduce every section from the output format. Include copy-paste-ready code for every file. Check API feasibility before designing integrations.`,
       },
     ],
   });

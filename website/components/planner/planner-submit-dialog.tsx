@@ -61,29 +61,29 @@ export function PlannerSubmitDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="glass mx-4 w-full max-w-md p-6">
-        <h3 className="mb-1 text-base font-medium text-white">
+        <h3 className="mb-1 text-[16px] font-normal text-white">
           Submit to Community
         </h3>
-        <p className="mb-4 text-xs font-light text-[#ffffff80]">
+        <p className="mb-4 text-[12px] font-light leading-[1.7] text-[#fff9]">
           Creates a GitHub issue with your feature request and the AI-generated plan.
         </p>
 
         {result?.url ? (
           <div className="space-y-3">
-            <p className="text-xs text-green-400/80">
+            <p className="text-[12px] text-green-400/80">
               Issue created successfully.
             </p>
             <a
               href={result.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-xs text-[#7c6aef] underline"
+              className="block text-[12px] text-[#7c6aef] underline"
             >
               View on GitHub
             </a>
             <button
               onClick={onClose}
-              className="w-full rounded-lg border border-[#ffffff14] px-4 py-2 text-xs text-[#ffffffcc] transition-all hover:border-[#ffffff26]"
+              className="w-full rounded-lg border border-[#ffffff14] px-4 py-2 text-[12px] font-light text-[#fffc] transition-all hover:border-[#ffffff26]"
             >
               Close
             </button>
@@ -96,22 +96,22 @@ export function PlannerSubmitDialog({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
-              className="w-full rounded-lg border border-[#ffffff14] bg-[#ffffff08] px-4 py-2.5 text-sm font-light text-white placeholder-[#ffffff4d] outline-none focus:border-[#7c6aef40]"
+              className="w-full rounded-lg border border-[#ffffff14] bg-[#ffffff08] px-4 py-2.5 text-[14px] font-light text-white placeholder-[#fff4] outline-none focus:border-[#7c6aef40]"
             />
             {result?.error && (
-              <p className="text-xs text-red-400/80">{result.error}</p>
+              <p className="text-[12px] text-red-400/80">{result.error}</p>
             )}
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-[#ffffff14] px-4 py-2 text-xs text-[#ffffffcc] transition-all hover:border-[#ffffff26]"
+                className="flex-1 rounded-lg border border-[#ffffff14] px-4 py-2 text-[12px] font-light text-[#fffc] transition-all hover:border-[#ffffff26]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!name.trim() || submitting}
-                className="flex-1 rounded-lg bg-white/90 px-4 py-2 text-xs font-medium text-black transition-all hover:bg-white disabled:opacity-40"
+                className="flex-1 rounded-lg bg-white/90 px-4 py-2 text-[12px] font-medium text-black transition-all hover:bg-white disabled:opacity-40"
               >
                 {submitting ? 'Submitting...' : 'Submit'}
               </button>

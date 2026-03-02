@@ -44,6 +44,32 @@ html {
   color-scheme: dark;
 }
 
+/* ── hf0-style landing typography ── */
+.hf0-type {
+  font-size: clamp(14px, 1vw, 20px);
+  line-height: 1.2;
+  color: #fffc;
+  font-weight: 300;
+}
+
+.hf0-type h1,
+.hf0-type h2,
+.hf0-type h3 {
+  font-weight: 400;
+}
+
+.hf0-type h4,
+.hf0-type h5,
+.hf0-type h6 {
+  font-weight: 700;
+}
+
+.hf0-type p,
+.hf0-type li {
+  font-weight: 300;
+  line-height: 1.7;
+}
+
 /* ── Gradient orb ── */
 @keyframes orb-breathe {
   0%, 100% {
@@ -65,19 +91,19 @@ html {
   animation: orb-breathe 8s ease-in-out infinite, orb-hue 25s linear infinite;
 }
 
-/* ── Glass morphism ── */
+/* ── Glass morphism (hf0: #ffffff1a + blur(7px) + 1.3em radius) ── */
 .glass {
-  background: #ffffff0d;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #ffffff1a;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
   border: 1px solid #ffffff14;
   border-radius: 1.3em;
 }
 
 .glass-strong {
-  background: #ffffff1a;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: #ffffff26;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid #ffffff1a;
   border-radius: 1.3em;
 }
