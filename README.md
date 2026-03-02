@@ -1,22 +1,37 @@
-# 🛡️ Aegis — Personal Intelligence Platform
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,50:16213e,100:0f3460&height=220&section=header&text=🛡️%20Aegis&fontSize=72&fontColor=e0e0ff&animation=fadeIn&fontAlignY=38&desc=Personal%20Intelligence%20Platform&descSize=20&descAlignY=58&descColor=a0a0cc" alt="Aegis" width="100%" />
+</p>
 
 <p align="center">
-  <strong>Your life, one AI away.</strong>
+  <strong>Your life, one AI away.</strong><br />
+  <sub>Self-hosted AI agents that connect your finances, calendar, academics, health, and social media — then deliver actionable insights over WhatsApp.</sub>
 </p>
+
+<br />
 
 <p align="center">
   <a href="https://github.com/JiwaniZakir/lifemanagement-kit/actions/workflows/ci.yml?branch=main"><img src="https://img.shields.io/github/actions/workflow/status/JiwaniZakir/lifemanagement-kit/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status" /></a>
   <a href="https://github.com/JiwaniZakir/lifemanagement-kit/releases"><img src="https://img.shields.io/github/v/release/JiwaniZakir/lifemanagement-kit?include_prereleases&style=for-the-badge" alt="GitHub release" /></a>
-  <a href="https://github.com/JiwaniZakir/lifemanagement-kit"><img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" /></a>
-  <a href="https://github.com/openclaw/openclaw"><img src="https://img.shields.io/badge/Built_on-OpenClaw-FF6B35?style=for-the-badge" alt="OpenClaw" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License" /></a>
 </p>
+
+<p align="center">
+  <a href="https://github.com/openclaw/openclaw"><img src="https://img.shields.io/badge/Built_on-OpenClaw-FF6B35?style=for-the-badge" alt="OpenClaw" /></a>
+  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" /></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
+</p>
+
+<br />
 
 **Aegis** is a _personal intelligence platform_ that runs on your own server. It connects your bank accounts, calendars, coursework, fitness trackers, and social media — then delivers actionable insights over WhatsApp. Morning briefings at 6 AM, spending alerts, deadline warnings, health goal tracking, and AI-generated LinkedIn/X posts — all from a single Docker Compose stack with zero public ports.
 
 Built on [OpenClaw](https://github.com/openclaw/openclaw). 4 containers. ~2,700 lines of custom code. Everything encrypted at rest with AES-256-GCM.
 
 [Getting Started](docs/SETUP_FROM_SCRATCH.md) · [OpenClaw Guide](docs/OPENCLAW_GUIDE.md) · [Deployment](docs/DEPLOYMENT.md) · [Development](docs/DEVELOPMENT.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Security](SECURITY.md) · [Features](FEATURES.md) · [Contributing](.github/CONTRIBUTING.md)
+
+---
 
 ## Highlights
 
@@ -28,6 +43,8 @@ Built on [OpenClaw](https://github.com/openclaw/openclaw). 4 containers. ~2,700 
 - **[Security-first](SECURITY.md)** — AES-256-GCM encryption, SHA-256 hash-chained audit log, PII redaction hooks, LLM budget guardrails, zero public ports via Cloudflare Tunnel.
 - **[8 scheduled jobs](config/cron/jobs.json)** — financial sync every 6h, calendar sync every 15m, LMS sync every 30m, health sync hourly, plus 4 user-facing deliveries.
 - **[3 security hooks](hooks/)** — audit logging, PII redaction, and budget enforcement run on every message before delivery.
+
+---
 
 ## Install (recommended)
 
@@ -100,6 +117,69 @@ docker compose up -d --build
 docker compose exec data-api uv run alembic upgrade head
 ```
 
+---
+
+## How it works
+
+Aegis is a skill pack + encrypted data layer for [**OpenClaw**](https://github.com/openclaw/openclaw), the open-source personal AI assistant. OpenClaw provides the agent runtime, scheduling, WhatsApp delivery (Baileys), web UI, and memory. Aegis teaches it how to manage your finances, calendar, coursework, health, and social media through 8 custom skills that call a private FastAPI service.
+
+```mermaid
+graph TB
+    subgraph External["External"]
+        WA["📱 WhatsApp"]
+        WEB["🌐 Web UI"]
+    end
+
+    subgraph CF["Cloudflare Tunnel"]
+        direction LR
+        TUN["🔒 Zero public ports"]
+    end
+
+    subgraph VPS["Single VPS — Docker Compose"]
+        direction TB
+
+        subgraph OC["OpenClaw Gateway"]
+            AGENTS["4 AI Agents"]
+            SKILLS["8 Skills"]
+            HOOKS["3 Hooks"]
+            CRON["8 Cron Jobs"]
+        end
+
+        subgraph DA["Data API — FastAPI"]
+            ENC["🔐 AES-256-GCM"]
+            AUDIT["📋 Audit Chain"]
+            API["31 Endpoints"]
+            INT["10 Integrations"]
+        end
+
+        subgraph DB["PostgreSQL + pgvector"]
+            CREDS["Credentials"]
+            TX["Transactions"]
+            LOG["Audit Log"]
+            HEALTH["Health Data"]
+        end
+
+        OC -->|"web_fetch"| DA
+        DA --> DB
+    end
+
+    WA --> CF
+    WEB --> CF
+    CF --> OC
+
+    style VPS fill:#1a1a2e,stroke:#0f3460,color:#e0e0ff
+    style OC fill:#16213e,stroke:#0f3460,color:#e0e0ff
+    style DA fill:#16213e,stroke:#0f3460,color:#e0e0ff
+    style DB fill:#16213e,stroke:#0f3460,color:#e0e0ff
+    style CF fill:#0f3460,stroke:#1a1a2e,color:#e0e0ff
+    style External fill:#0d1117,stroke:#30363d,color:#e0e0ff
+```
+
+**OpenClaw** = the brain. Agents, cron scheduling, LLM calls, WhatsApp (Baileys), web UI, agent memory (LanceDB), session management.
+**Data API** = the vault. Encrypted credential storage, integration API proxies, tamper-evident audit log, budget tracking. No analysis, no LLM calls, no delivery — just stores and retrieves.
+
+---
+
 ## Everything we built so far
 
 ### Core platform
@@ -112,6 +192,19 @@ docker compose exec data-api uv run alembic upgrade head
 - [Database migrations](data-api/alembic/) — Alembic-managed schema with pgvector, pgcrypto, and uuid-ossp extensions.
 
 ### Integrations (10 clients)
+
+<p align="center">
+  <a href="https://plaid.com/"><img src="https://img.shields.io/badge/Plaid-Banking-00C853?style=flat-square&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAA7AAAAOwBeShxvQAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABXSURBVCiRY/j//z8DEjYA4v9QNgMuNYxYJP8zMDAwMGETZGJgYGBgwKYQl2Z8fsbqRwYGBoYFDAz/GXBpxuknBgYGBgZ8msHqsWnGF1c4NePThzeuAABMCRYQOPjXsAAAAABJRU5ErkJggg==" alt="Plaid" /></a>
+  <a href="https://developer.schwab.com/"><img src="https://img.shields.io/badge/Schwab-Investments-00A0DF?style=flat-square" alt="Schwab" /></a>
+  <a href="https://www.instructure.com/canvas"><img src="https://img.shields.io/badge/Canvas-LMS-E13F29?style=flat-square" alt="Canvas" /></a>
+  <a href="https://www.blackboard.com/"><img src="https://img.shields.io/badge/Blackboard-Learn-000000?style=flat-square" alt="Blackboard" /></a>
+  <a href="https://calendar.google.com/"><img src="https://img.shields.io/badge/Google-Calendar-4285F4?style=flat-square&logo=google-calendar&logoColor=white" alt="Google Calendar" /></a>
+  <a href="https://outlook.com/"><img src="https://img.shields.io/badge/Outlook-Calendar-0078D4?style=flat-square&logo=microsoft-outlook&logoColor=white" alt="Outlook" /></a>
+  <a href="https://connect.garmin.com/"><img src="https://img.shields.io/badge/Garmin-Connect-000000?style=flat-square&logo=garmin&logoColor=white" alt="Garmin" /></a>
+  <a href="https://www.apple.com/ios/health/"><img src="https://img.shields.io/badge/Apple-Health-FF2D55?style=flat-square&logo=apple&logoColor=white" alt="Apple Health" /></a>
+  <a href="https://www.linkedin.com/"><img src="https://img.shields.io/badge/LinkedIn-Posting-0A66C2?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+  <a href="https://x.com/"><img src="https://img.shields.io/badge/X-Posting-000000?style=flat-square&logo=x&logoColor=white" alt="X" /></a>
+</p>
 
 - [Plaid client](data-api/app/integrations/plaid_client.py) — bank accounts, transactions, balances, recurring charges, subscription detection, Plaid Link token exchange.
 - [Schwab client](data-api/app/integrations/schwab_client.py) — investment portfolios, positions, two-step trade execution (preview → confirm with token).
@@ -166,38 +259,7 @@ docker compose exec data-api uv run alembic upgrade head
 - [Cloudflare Tunnel](infrastructure/cloudflared/) — zero public ports, token-based auth.
 - [CI pipeline](.github/workflows/ci.yml) — lint, TypeScript check, tests with PostgreSQL, Docker build validation, Trivy security scan.
 
-## How it works
-
-Aegis is a skill pack + encrypted data layer for [**OpenClaw**](https://github.com/openclaw/openclaw), the open-source personal AI assistant. OpenClaw provides the agent runtime, scheduling, WhatsApp delivery (Baileys), web UI, and memory. Aegis teaches it how to manage your finances, calendar, coursework, health, and social media through 8 custom skills that call a private FastAPI service.
-
-```
-WhatsApp / Web UI
-       │
-       ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                     Single VPS (Docker Compose)                  │
-│                                                                  │
-│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │  OpenClaw Gateway │  │   Data API   │  │   PostgreSQL     │   │
-│  │                   │  │  (FastAPI +   │  │   + pgvector     │   │
-│  │  · 4 AI agents    │  │  encryption)  │  │                  │   │
-│  │  · 8 skills       │  │              │  │  · credentials   │   │
-│  │  · 3 hooks        │  │  · 31 endpoints│  │  · transactions  │   │
-│  │  · 8 cron jobs    │  │  · 10 clients │  │  · audit log     │   │
-│  │  · WhatsApp + UI  │  │  · 9 models   │  │  · health data   │   │
-│  └──────────────────┘  └──────────────┘  └──────────────────┘   │
-│           │                    │                    │            │
-│           └────────────────────┼────────────────────┘            │
-│                          internal networks                       │
-│                                                                  │
-│  ┌──────────────────────────────────────────────────────────┐   │
-│  │           Cloudflare Tunnel (zero public ports)           │   │
-│  └──────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-**OpenClaw** = the brain. Agents, cron scheduling, LLM calls, WhatsApp (Baileys), web UI, agent memory (LanceDB), session management.
-**Data API** = the vault. Encrypted credential storage, integration API proxies, tamper-evident audit log, budget tracking. No analysis, no LLM calls, no delivery — just stores and retrieves.
+---
 
 ## Key subsystems
 
@@ -207,6 +269,8 @@ WhatsApp / Web UI
 - **[PII redaction](hooks/pii-guard/)** — regex hook intercepts all outbound messages and redacts SSNs, credit card numbers, and bank account numbers before delivery. Runs synchronously before WhatsApp send.
 - **[Skill platform](skills/)** — 8 SKILL.md files with YAML frontmatter that teach OpenClaw agents how to call data-api endpoints via `web_fetch`. Skills replace Python service files — the LLM does the reasoning; skills teach data queries.
 - **[Cron automation](config/cron/jobs.json)** — 8 scheduled jobs run in isolated sessions. Sync agents quietly update data; briefing agents deliver WhatsApp messages on schedule.
+
+---
 
 ## Integrations
 
@@ -328,6 +392,8 @@ X_ACCESS_SECRET=your_access_secret
 
 Endpoints: `/social/post`, `/social/history`, `/social/engagement`, `/social/x/me`, `/social/x/search`.
 
+---
+
 ## Scheduled tasks
 
 | Task | Schedule | Agent | What it does |
@@ -342,6 +408,8 @@ Endpoints: `/social/post`, `/social/history`, `/social/engagement`, `/social/x/m
 | Security audit | `0 9 * * 1` (Mon 9 AM ET) | `briefing` | Verifies audit chain + reports budget status |
 
 All schedules are cron expressions in `config/cron/jobs.json`. Sync jobs run silently (only report errors); briefing/content jobs announce to WhatsApp.
+
+---
 
 ## Agent configuration
 
@@ -373,6 +441,8 @@ Global defaults:
   },
 }
 ```
+
+---
 
 ## Skills
 
@@ -410,6 +480,8 @@ Morning briefing (6 AM): greeting + schedule + urgent deadlines + financial snap
 
 Always active across all agents. Mandatory redactions: SSN → `[SSN REDACTED]`, Card → `[CARD REDACTED]`, Account → `****1234`. Monitors for brute force patterns (5+ failures in 15 min). Hash-chain break detection = critical security alert. Budget thresholds: OK (< 80%), Warning (80–95%), Critical (95–100%), Exceeded (> 100%).
 
+---
+
 ## Hooks
 
 Hooks intercept agent events and run custom logic before delivery. Discovered via `HOOK.md` files with YAML frontmatter. Handlers are TypeScript files using the `InternalHookEvent` type.
@@ -442,6 +514,8 @@ Tracks LLM token spend per message and enforces budgets:
 - **Exceeded** (≥ 100%) — blocks message, clears content, pauses AI calls
 
 Default budgets: $5/day, $50/month (configurable via `LLM_DAILY_BUDGET_USD` and `LLM_MONTHLY_BUDGET_USD`). Token estimation: 1 token ≈ 4 characters. All state in PostgreSQL (survives container restarts). Fails open if data-api is unreachable.
+
+---
 
 ## Security model
 
@@ -484,6 +558,8 @@ SHA-256 hash-chained tamper-evident log in PostgreSQL. Every entry includes the 
 - All usage data persisted in PostgreSQL (survives restarts)
 
 Full threat model → [SECURITY.md](SECURITY.md)
+
+---
 
 ## Configuration
 
@@ -562,7 +638,14 @@ export default async function handler(event: InternalHookEvent) {
 
 Step-by-step → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
 
+---
+
 ## Project structure
+
+<details>
+<summary><strong>View full directory layout</strong></summary>
+
+<br />
 
 ```
 lifemanagement-kit/
@@ -595,70 +678,21 @@ lifemanagement-kit/
 │   ├── pyproject.toml              # uv-managed deps (~15 packages)
 │   ├── alembic.ini
 │   ├── alembic/                    # Database migrations
-│   │   ├── env.py
-│   │   └── versions/
 │   ├── app/
 │   │   ├── main.py                 # FastAPI app, Bearer auth, audit middleware
 │   │   ├── config.py               # Pydantic Settings
 │   │   ├── database.py             # Async SQLAlchemy engine + sessions
-│   │   ├── logging.py              # structlog with secret redaction
-│   │   ├── security/
-│   │   │   ├── encryption.py       # AES-256-GCM field encryption
-│   │   │   └── audit.py            # SHA-256 hash-chained audit log
+│   │   ├── security/               # AES-256-GCM + audit log
 │   │   ├── models/                 # 9 SQLAlchemy models
-│   │   │   ├── base.py             # DeclarativeBase, UUIDMixin, TimestampMixin
-│   │   │   ├── credential.py
-│   │   │   ├── audit.py
-│   │   │   ├── account.py
-│   │   │   ├── transaction.py
-│   │   │   ├── assignment.py
-│   │   │   ├── health_metric.py
-│   │   │   ├── content_draft.py
-│   │   │   └── social_post.py
 │   │   ├── api/                    # 10 routers (31 endpoints)
-│   │   │   ├── credentials.py
-│   │   │   ├── finance.py
-│   │   │   ├── calendar.py
-│   │   │   ├── lms.py
-│   │   │   ├── health.py
-│   │   │   ├── social.py
-│   │   │   ├── audit.py
-│   │   │   ├── budget.py
-│   │   │   ├── briefing.py
-│   │   │   └── content.py
 │   │   └── integrations/           # 10 API clients
-│   │       ├── base.py
-│   │       ├── plaid_client.py
-│   │       ├── schwab_client.py
-│   │       ├── canvas_client.py
-│   │       ├── blackboard_client.py
-│   │       ├── garmin_client.py
-│   │       ├── google_calendar_client.py
-│   │       ├── outlook_calendar_client.py
-│   │       ├── linkedin_client.py
-│   │       └── x_client.py
 │   └── tests/                      # 113 tests
-│       ├── conftest.py
-│       ├── test_health_endpoint.py
-│       ├── test_auth.py
-│       ├── test_encryption.py
-│       ├── test_audit.py
-│       └── ...
 ├── infrastructure/
 │   ├── Dockerfile.data-api         # Multi-stage Python 3.12-slim
 │   ├── cloudflared/config.yml      # Tunnel config
 │   ├── postgres/init.sql           # Extensions (vector, pgcrypto, uuid)
-│   └── scripts/
-│       ├── bootstrap.sh            # One-command setup
-│       ├── deploy.sh               # Build + start + health
-│       ├── backup.sh               # age-encrypted pg_dump
-│       └── restore.sh              # Decrypt + restore + migrate
-├── docs/
-│   ├── SETUP_FROM_SCRATCH.md       # Complete zero-to-running guide
-│   ├── OPENCLAW_GUIDE.md           # How OpenClaw works
-│   ├── DEPLOYMENT.md               # Production checklist
-│   ├── DEVELOPMENT.md              # Developer guide
-│   └── TROUBLESHOOTING.md          # Common issues
+│   └── scripts/                    # bootstrap, deploy, backup, restore
+├── docs/                           # Comprehensive documentation
 ├── docker-compose.yml              # 4 services
 ├── docker-compose.prod.yml         # Production overrides
 ├── docker-compose.override.yml     # Dev port bindings
@@ -669,6 +703,10 @@ lifemanagement-kit/
 ├── CLAUDE.md                       # AI-assisted development reference
 └── LICENSE                         # MIT
 ```
+
+</details>
+
+---
 
 ## Development
 
@@ -697,6 +735,8 @@ uv run ruff format app/    # Format
 uv run alembic upgrade head # Apply migrations
 ```
 
+---
+
 ## Docs
 
 Use these when you're past the quick start and want the deeper reference.
@@ -721,6 +761,8 @@ Use these when you're past the quick start and want the deeper reference.
 
 - [Security](SECURITY.md) — full threat model, encryption details, PII handling, audit chain, vulnerability reporting.
 - [Contributing](.github/CONTRIBUTING.md) — contribution guidelines, PR checklist, and code review process.
+
+---
 
 ## Operations
 
@@ -770,6 +812,22 @@ curl -sf http://localhost:8000/audit/verify \
   -H "Authorization: Bearer $DATA_API_TOKEN"
 ```
 
+---
+
+## Star History
+
+<p align="center">
+  <a href="https://www.star-history.com/#JiwaniZakir/lifemanagement-kit&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=JiwaniZakir/lifemanagement-kit&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=JiwaniZakir/lifemanagement-kit&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=JiwaniZakir/lifemanagement-kit&type=Date" width="600" />
+    </picture>
+  </a>
+</p>
+
+---
+
 ## Contributing
 
 Contributions welcome. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
@@ -779,6 +837,12 @@ Contributions welcome. See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidel
 make lint test
 ```
 
+---
+
 ## License
 
 [MIT](LICENSE)
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1a1a2e,50:16213e,100:0f3460&height=120&section=footer" alt="" width="100%" />
+</p>
