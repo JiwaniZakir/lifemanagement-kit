@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Aegis.
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Make your changes
-4. Run tests: `cd backend && uv run pytest`
+4. Run tests: `cd data-api && uv run pytest`
 5. Commit with a descriptive message
 6. Push to your fork and open a pull request
 

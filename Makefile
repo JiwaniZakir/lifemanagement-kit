@@ -1,11 +1,11 @@
 # =============================================================================
-# Aegis — Makefile
+# Aegis — Makefile (OpenClaw Core Architecture)
 # =============================================================================
 
 COMPOSE := docker compose
 COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: dev prod down backup logs health migrate test lint format clean
+.PHONY: dev prod down backup restore logs health migrate test lint format clean
 
 # --- Development ---
 dev:
@@ -24,6 +24,10 @@ down:
 backup:
 	./infrastructure/scripts/backup.sh
 
+# --- Restore (requires BACKUP_FILE=path/to/file) ---
+restore:
+	./infrastructure/scripts/restore.sh --confirm $(BACKUP_FILE)
+
 # --- Logs ---
 logs:
 	$(COMPOSE) logs -f
@@ -36,31 +40,29 @@ health:
 	@echo "=== PostgreSQL ==="
 	@$(COMPOSE) exec postgres pg_isready -U aegis || echo "UNHEALTHY"
 	@echo ""
-	@echo "=== Redis ==="
-	@$(COMPOSE) exec redis redis-cli -a "$${REDIS_PASSWORD}" ping || echo "UNHEALTHY"
+	@echo "=== Data API ==="
+	@$(COMPOSE) exec data-api curl -sf http://127.0.0.1:8000/health || echo "UNHEALTHY"
 	@echo ""
-	@echo "=== Qdrant ==="
-	@$(COMPOSE) exec qdrant wget -qO- http://localhost:6333/healthz || echo "UNHEALTHY"
+	@echo "=== OpenClaw Gateway ==="
+	@$(COMPOSE) exec openclaw-gateway node -e 'require("http").get("http://localhost:18789/health",(r)=>{process.exit(r.statusCode===200?0:1)}).on("error",()=>process.exit(1))' || echo "UNHEALTHY"
 
 # --- Database migrations ---
 migrate:
-	cd backend && uv run alembic upgrade head
+	cd data-api && uv run alembic upgrade head
 
 # --- Run tests ---
 test:
-	cd backend && uv run pytest tests/ -v
+	cd data-api && uv run pytest tests/ -v
 
 # --- Lint ---
 lint:
-	cd backend && uv run ruff check .
-	@if [ -d console/node_modules ]; then cd console && npx biome check .; fi
+	cd data-api && uv run ruff check .
 
 # --- Format ---
 format:
-	cd backend && uv run ruff format .
-	@if [ -d console/node_modules ]; then cd console && npx biome format --write .; fi
+	cd data-api && uv run ruff format .
 
 # --- Clean ---
 clean:
 	$(COMPOSE) down -v
-	rm -rf backend/.venv console/.next console/node_modules mobile/node_modules
+	rm -rf data-api/.venv

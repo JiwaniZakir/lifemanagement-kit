@@ -2,7 +2,7 @@
 # =============================================================================
 # Aegis — Backup Script
 # =============================================================================
-# Dumps PostgreSQL, encrypts with age, stores in MinIO.
+# Dumps PostgreSQL, encrypts with age, stores locally.
 #
 # Usage: ./infrastructure/scripts/backup.sh
 # =============================================================================
@@ -35,6 +35,9 @@ ENCRYPTED_FILE="${DUMP_FILE}.age"
 
 mkdir -p "$BACKUP_DIR"
 
+# Ensure plaintext dump is cleaned up on any exit (error, interrupt, etc.)
+trap 'rm -f "$DUMP_FILE" 2>/dev/null' EXIT
+
 # --- Step 1: Dump PostgreSQL ---
 log_info "Dumping PostgreSQL database..."
 docker compose -f "$PROJECT_DIR/docker-compose.yml" exec -T postgres \
@@ -61,20 +64,7 @@ else
     ENCRYPTED_FILE="$DUMP_FILE"
 fi
 
-# --- Step 3: Upload to MinIO ---
-if command -v mc &>/dev/null; then
-    log_info "Uploading to MinIO..."
-    mc alias set aegis "${MINIO_URL:-http://localhost:9000}" \
-        "${MINIO_ROOT_USER:-aegis}" "${MINIO_ROOT_PASSWORD}" 2>/dev/null
-
-    mc mb --ignore-existing aegis/backups 2>/dev/null
-    mc cp "$ENCRYPTED_FILE" "aegis/backups/$(basename "$ENCRYPTED_FILE")"
-    log_info "Uploaded to MinIO: backups/$(basename "$ENCRYPTED_FILE")"
-else
-    log_warn "mc (MinIO client) not installed — backup stored locally only"
-fi
-
-# --- Step 4: Clean up old local backups (keep last 7) ---
+# --- Step 3: Clean up old local backups (keep last 7) ---
 log_info "Cleaning old local backups..."
 ls -t "$BACKUP_DIR"/aegis_*.age "$BACKUP_DIR"/aegis_*.sql.gz 2>/dev/null \
     | tail -n +8 | xargs rm -f 2>/dev/null || true

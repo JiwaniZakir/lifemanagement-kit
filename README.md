@@ -1,211 +1,145 @@
 # Aegis
 
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](https://python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docker.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7.4+-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Self-hosted personal intelligence platform aggregating 15+ data sources with RAG-powered insights and autonomous content generation.
+Self-hosted personal intelligence platform built on [OpenClaw](https://github.com/openclaw/openclaw). Aggregates 10+ data sources (banking, calendars, LMS, health, social) and surfaces insights through WhatsApp via AI agents.
 
----
+## Quick Start
+
+```bash
+# 1. Clone
+git clone https://github.com/JiwaniZakir/aegis.git && cd aegis
+
+# 2. Bootstrap (generates secrets, starts services, runs migrations)
+./infrastructure/scripts/bootstrap.sh
+
+# 3. Add your Anthropic API key to .env, then restart the gateway
+#    Edit .env → set ANTHROPIC_API_KEY=sk-ant-...
+docker compose restart openclaw-gateway
+
+# 4. Open Control UI → pair WhatsApp by scanning the QR code
+open http://localhost:18789
+```
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                     Single VPS (Docker Compose)                       │
-│                                                                       │
-│  ┌──────────┐  ┌───────────┐  ┌───────────┐  ┌──────────────────┐   │
-│  │ Traefik  │  │    API    │  │  Worker   │  │  Content Engine  │   │
-│  │(internal)│  │ (FastAPI) │  │ (Celery)  │  │  (RAG + Claude)  │   │
-│  └──────────┘  └───────────┘  └───────────┘  └──────────────────┘   │
-│                                                                       │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌──────────────────┐  │
-│  │ Postgres  │  │   Redis   │  │  Qdrant   │  │      MinIO       │  │
-│  │ +pgvector │  │           │  │ (vectors) │  │  (object store)  │  │
-│  └───────────┘  └───────────┘  └───────────┘  └──────────────────┘  │
-│                                                                       │
-│  ┌───────────────────────────────────────────────────────────────┐   │
-│  │               Cloudflare Tunnel (zero public ports)            │   │
-│  └───────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────┘
-        │                          │                        │
-   ┌────┴────┐              ┌──────┴──────┐          ┌──────┴──────┐
-   │   Web   │              │   Mobile    │          │  Automated  │
-   │ Console │              │  (Voice UI) │          │  Publishing │
-   │(Next.js)│              │(React Native│          │ (LinkedIn/X)│
-   └─────────┘              └─────────────┘          └─────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     Single VPS (Docker Compose)                   │
+│                                                                   │
+│  ┌──────────────────┐  ┌──────────────┐  ┌──────────────────┐   │
+│  │  OpenClaw Gateway │  │   Data API   │  │    PostgreSQL    │   │
+│  │ (agents, cron, UI │  │  (FastAPI +  │  │   + pgvector     │   │
+│  │  WhatsApp)        │  │  encryption) │  │                  │   │
+│  └──────────────────┘  └──────────────┘  └──────────────────┘   │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐   │
+│  │             Cloudflare Tunnel (zero public ports)           │   │
+│  └───────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘
 ```
+
+**OpenClaw IS the application** — it handles agents, scheduling (cron), LLM calls, WhatsApp delivery (Baileys), and the web UI. The **data-api** is a thin encrypted persistence layer (~1,500 LOC) that OpenClaw agents call via `web_fetch`.
+
+4 Docker services. Zero public ports. ~2,700 lines of custom code.
 
 ## Data Integrations
 
 | Category | Sources | Method |
 |----------|---------|--------|
-| **Banking** | Chase, TD, PNC, Discover, Amex | Plaid API (read-only transactions, balances, recurring) |
-| **Investments** | Fidelity/Schwab | Schwab API (portfolio reads + trading) |
-| **Email** | Gmail | Gmail API + IMAP fallback |
-| **Education** | Canvas LMS, Blackboard, Pearson | REST APIs + Playwright scraper |
-| **Social** | LinkedIn, X/Twitter | Platform APIs + scraper fallback |
+| **Banking** | Chase, TD, PNC, Discover, Amex | Plaid API |
+| **Investments** | Schwab | Schwab API (`schwab-py`) |
+| **Education** | Canvas LMS, Blackboard | Canvas REST API |
 | **Calendar** | Google Calendar, Outlook | Google Calendar API, Microsoft Graph |
-| **Messaging** | WhatsApp | whatsapp-web.js Node.js bridge |
-| **Health** | Apple Health, Garmin | HealthKit export, Garmin Connect API |
-| **Productivity** | Mac Screen Time, iPhone | Custom Swift agent + iOS Shortcuts |
-| **News** | NewsAPI, RSS feeds | newsapi-python, feedparser |
-| **Web** | General web | Playwright + BeautifulSoup crawler |
+| **Health** | Apple Health, Garmin | iOS Shortcuts + Garmin Connect |
+| **Social** | LinkedIn, X/Twitter | Platform APIs |
 
 ## Features
 
-### Personal Intelligence
-- **Financial analysis** — Spending trends, recurring charges, investment portfolio tracking via Plaid + Schwab
-- **Email intelligence** — Automated categorization, priority scoring, relationship extraction from Gmail
-- **Academic tracking** — Assignment deadlines, grade monitoring across Canvas, Blackboard, Pearson
-- **Contact graph** — Relationship mapping across email, social, calendar, and messaging
-- **Health optimization** — Activity trends and sleep analysis from Apple Health + Garmin
+- **Morning briefing** — Aggregated daily brief delivered to WhatsApp at 6 AM
+- **Financial tracking** — Spending trends, recurring charges, affordability checks via Plaid + Schwab
+- **Academic tracking** — Assignment deadlines, grade monitoring, overdue alerts via Canvas LMS
+- **Health optimization** — Activity, sleep, and nutrition tracking from Apple Health + Garmin
+- **Content engine** — AI-generated LinkedIn + X posts delivered for approval
+- **Weekly digest** — End-of-week summary with trends and highlights
+- **AES-256-GCM encryption** — All sensitive data encrypted at rest
+- **Tamper-evident audit log** — SHA-256 hash-chained audit trail
+- **PII redaction** — Automatic regex-based redaction before outbound messages
+- **LLM budget guardrails** — Daily/monthly spend tracking with alerts at 80/95/100%
 
-### Content Engine
-- **RAG pipeline** — Qdrant vector store with sentence-transformer embeddings over all ingested data
-- **Autonomous publishing** — Daily thought-leadership posts to LinkedIn and X, generated from personal knowledge base
-- **Claude-powered analysis** — Anthropic Claude API for content generation and insight synthesis
+## Integration Setup
 
-### Security Architecture
-- **Zero attack surface** — No public ports; all access through Cloudflare Tunnel
-- **AES-256-GCM encryption** — All sensitive data encrypted at rest with authenticated encryption
-- **SOPS + age** — Secrets managed with Mozilla SOPS, encrypted with age keys
-- **Internal-only routing** — Traefik reverse proxy restricted to Docker network
-- **Audit logging** — All data access operations logged with tamper-evident trails
+### Google Calendar (OAuth 2.0)
 
-## Tech Stack
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the **Google Calendar API**
+3. Create OAuth 2.0 credentials (Desktop app type)
+4. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to `.env`
+5. Complete the OAuth flow and store the refresh token via `POST /credentials`
 
-| Layer | Technology |
-|-------|-----------|
-| API | FastAPI 0.115+, Python 3.12+ |
-| Task Queue | Celery 5.4+ with Redis broker |
-| Database | PostgreSQL 16+ with pgvector |
-| Vector Store | Qdrant 1.12+ |
-| Object Storage | MinIO |
-| LLM | Claude API (Anthropic SDK) |
-| Embeddings | sentence-transformers / OpenAI text-embedding-3-small |
-| Web Console | Next.js 15, shadcn/ui, Tailwind CSS, Zustand, D3.js |
-| Mobile | React Native (Expo SDK 52+), voice UI |
-| Infrastructure | Docker Compose, Traefik 3.x, Cloudflare Tunnel |
-| Secrets | SOPS + age, Docker Secrets |
+### Plaid (Banking)
 
-## Project Structure
+1. Sign up at [Plaid Dashboard](https://dashboard.plaid.com/)
+2. Get Sandbox credentials (free) or Development credentials
+3. Add `PLAID_CLIENT_ID`, `PLAID_SECRET`, and `PLAID_ENV` to `.env`
+4. Use the Plaid Link flow (`POST /finance/link/create` → exchange token)
 
-```
-aegis/
-├── backend/
-│   ├── app/
-│   │   ├── main.py                    # FastAPI application
-│   │   ├── config.py                  # Environment configuration
-│   │   ├── celery_app.py              # Task queue setup
-│   │   ├── database.py                # Async SQLAlchemy engine
-│   │   ├── api/v1/                    # REST endpoints
-│   │   │   ├── auth.py                # Authentication
-│   │   │   ├── finance.py             # Banking & investments
-│   │   │   ├── email.py               # Email intelligence
-│   │   │   ├── calendar.py            # Calendar sync
-│   │   │   ├── social.py              # Social media
-│   │   │   ├── health.py              # Health metrics
-│   │   │   └── security.py            # Audit & encryption
-│   │   ├── integrations/              # 13 data source clients
-│   │   │   ├── plaid_client.py
-│   │   │   ├── schwab_client.py
-│   │   │   ├── gmail_client.py
-│   │   │   ├── canvas_client.py
-│   │   │   ├── linkedin_client.py
-│   │   │   ├── x_client.py
-│   │   │   ├── google_calendar.py
-│   │   │   ├── outlook_client.py
-│   │   │   ├── whatsapp_bridge.py
-│   │   │   ├── garmin_client.py
-│   │   │   └── ...
-│   │   ├── services/                  # Business logic
-│   │   │   ├── finance_analyzer.py
-│   │   │   ├── email_analyzer.py
-│   │   │   ├── contact_graph.py
-│   │   │   ├── content_engine.py
-│   │   │   ├── health_optimizer.py
-│   │   │   └── daily_briefing.py
-│   │   ├── models/                    # SQLAlchemy models
-│   │   ├── security/                  # Auth, encryption, audit
-│   │   └── tasks/                     # Celery task definitions
-│   ├── tests/                         # 207 tests
-│   ├── alembic/                       # Database migrations
-│   └── pyproject.toml
-├── console/                           # Next.js web dashboard
-│   └── src/
-│       ├── app/                       # 10 dashboard pages
-│       ├── components/                # UI components
-│       └── lib/                       # API client, state
-├── mobile/                            # React Native voice app
-│   └── app/                           # Expo Router screens
-├── whatsapp-bridge/                   # Node.js WhatsApp sidecar
-├── infrastructure/
-│   ├── cloudflared/                   # Tunnel configuration
-│   ├── traefik/                       # Reverse proxy config
-│   ├── postgres/                      # DB initialization
-│   └── scripts/                       # deploy.sh, backup.sh, rotate-secrets.sh
-├── secrets/                           # SOPS-encrypted credentials
-├── docker-compose.yml                 # Development
-├── docker-compose.prod.yml            # Production overrides
-└── .env.example                       # Environment template
-```
+### Canvas LMS
 
-## Quick Start
+1. In Canvas, go to **Account > Settings > Approved Integrations**
+2. Generate a **Personal Access Token**
+3. Store the token: `POST /credentials` with `service_name=canvas_access_token`
+4. Set `CANVAS_API_URL` in `.env` (e.g., `https://canvas.drexel.edu/api/v1`)
 
-### Prerequisites
+## Customizing Skills
 
-- Docker + Docker Compose 2.29+
-- Python 3.12+
-- Node.js 20+
+Skills are Markdown files in `skills/` that teach agents how to query data. Each skill has:
 
-### Setup
+- A YAML frontmatter (`name`, `description`)
+- API endpoint documentation with example `web_fetch` calls
+- Guidelines for formatting and presenting data
+
+To add a new skill, create `skills/my-skill/SKILL.md` and reference the data-api endpoints. OpenClaw auto-discovers skills at startup.
+
+## Security
+
+- **Zero public ports** — all access through Cloudflare Tunnel
+- **Bearer token auth** — constant-time comparison for machine-to-machine calls
+- **AES-256-GCM** with AAD context for credentials and sensitive fields
+- **SHA-256 hash-chained** tamper-evident audit log
+- **PII guard hook** — regex-scans outbound messages for SSN, card numbers, etc.
+- **Budget guard hook** — tracks LLM spend, warns at threshold
+- **Docker hardening** — `cap_drop: [ALL]`, `no-new-privileges: true`, internal-only networks
+
+## Development
 
 ```bash
-git clone https://github.com/JiwaniZakir/aegis.git
-cd aegis
+# Run data-api tests (113 tests)
+cd data-api && uv run pytest -q
 
-# Copy environment template
-cp .env.example .env
-# Edit .env with your API credentials (Plaid, Google, etc.)
+# Lint + format
+cd data-api && uv run ruff check app/ tests/
+cd data-api && uv run ruff format app/ tests/
 
-# Start all services
+# Run full stack locally
 docker compose up -d
-
-# Run database migrations
-docker compose exec api alembic upgrade head
-
-# Access web console
-open http://localhost:3000
 ```
 
-### Development
+## Scheduled Tasks (OpenClaw Cron)
 
-```bash
-# Backend only
-cd backend && uv sync && uv run uvicorn app.main:app --reload
-
-# Console only
-cd console && npm install && npm run dev
-
-# Run tests
-cd backend && uv run pytest
-```
-
-## Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| Financial sync | Every 6 hours | Pull transactions and balances via Plaid |
-| Email analysis | Every 4 hours | Categorize and extract insights from new emails |
-| Calendar sync | Every 2 hours | Sync events from Google Calendar + Outlook |
-| Social monitoring | Every 8 hours | Track LinkedIn and X activity |
-| Content publishing | Daily 8:00 AM | Generate and publish thought-leadership content |
-| Health sync | Daily 6:00 AM | Pull Garmin metrics and Apple Health exports |
-| Weekly briefing | Weekly (Monday) | Comprehensive intelligence digest |
+| Task | Frequency | Delivery |
+|------|-----------|----------|
+| Financial sync | Every 6 hours | silent |
+| Calendar sync | Every 15 min | silent |
+| LMS sync | Every 30 min | silent |
+| Health sync | Hourly | silent |
+| Morning briefing | Daily 6:00 AM | WhatsApp |
+| Content drafts | Daily 7:00 AM | WhatsApp |
+| Weekly digest | Sunday 8:00 PM | WhatsApp |
+| Security audit | Monday 9:00 AM | WhatsApp |
 
 ## Contributing
 

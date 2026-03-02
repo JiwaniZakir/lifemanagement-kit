@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Aegis — Deployment Script
+# Aegis — Deployment Script (OpenClaw Core Architecture)
 # =============================================================================
 # Decrypts SOPS secrets, validates .env, builds and starts all services,
 # runs health checks.
@@ -45,6 +45,8 @@ fi
 # --- Step 1: Decrypt SOPS secrets ---
 log_info "Decrypting SOPS secrets..."
 if command -v sops &>/dev/null; then
+    # Clean up decrypted secrets on exit to avoid leaving plaintext on disk
+    trap 'rm -f "$PROJECT_DIR"/secrets/*.yaml 2>/dev/null' EXIT
     for enc_file in "$PROJECT_DIR"/secrets/*.enc.yaml; do
         [ -f "$enc_file" ] || continue
         out_file="${enc_file%.enc.yaml}.yaml"
@@ -74,7 +76,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
     exit 1
 fi
 
-REQUIRED_VARS=(POSTGRES_PASSWORD REDIS_PASSWORD JWT_SECRET ENCRYPTION_MASTER_KEY MINIO_ROOT_PASSWORD)
+REQUIRED_VARS=(POSTGRES_PASSWORD DATA_API_TOKEN ENCRYPTION_MASTER_KEY ANTHROPIC_API_KEY)
 for var in "${REQUIRED_VARS[@]}"; do
     val=$(grep -E "^${var}=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || true)
     if [[ -z "$val" ]]; then
@@ -91,7 +93,7 @@ docker compose $COMPOSE_FILES up -d --build
 
 # --- Step 4: Wait for health checks ---
 log_info "Waiting for services to become healthy..."
-SERVICES=(postgres redis qdrant minio traefik api console)
+SERVICES=(postgres data-api openclaw-gateway)
 MAX_WAIT=120
 ELAPSED=0
 

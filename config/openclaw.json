@@ -1,0 +1,258 @@
+{
+  "$schema": "https://openclaw.dev/schema/openclaw.json",
+  "gateway": {
+    "port": 18789,
+    "bind": "lan",
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    },
+    "reload": {
+      "mode": "hot",
+      "debounceMs": 1000
+    },
+    "controlUi": {
+      "allowedOrigins": ["http://localhost:18789", "http://127.0.0.1:18789"]
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-6"
+      },
+      "workspace": "/home/node/.openclaw/workspace",
+      "userTimezone": "America/New_York",
+      "timeFormat": "12",
+      "timeoutSeconds": 120,
+      "thinkingDefault": "low",
+      "compaction": {
+        "mode": "safeguard",
+        "reserveTokensFloor": 4096,
+        "memoryFlush": {
+          "enabled": true
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "Aegis",
+        "model": {
+          "primary": "anthropic/claude-sonnet-4-6",
+          "fallbacks": ["anthropic/claude-haiku-4-5"]
+        },
+        "workspace": "/home/node/.openclaw/workspace",
+        "identity": {
+          "name": "Aegis",
+          "emoji": "🛡️"
+        },
+        "tools": {
+          "profile": "full",
+          "allow": ["web_fetch", "web_search", "memory_search"],
+          "elevated": {
+            "enabled": false
+          }
+        },
+        "memorySearch": {
+          "enabled": true
+        },
+        "heartbeat": {
+          "every": "30m",
+          "model": "anthropic/claude-haiku-4-5",
+          "activeHours": {
+            "start": "06:00",
+            "end": "23:00",
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "id": "sync",
+        "name": "Sync Worker",
+        "model": "anthropic/claude-haiku-4-5-20251001",
+        "identity": {
+          "name": "Aegis Sync"
+        },
+        "tools": {
+          "profile": "minimal",
+          "allow": ["web_fetch"],
+          "elevated": {
+            "enabled": false
+          }
+        }
+      },
+      {
+        "id": "briefing",
+        "name": "Briefing Agent",
+        "model": "anthropic/claude-haiku-4-5-20251001",
+        "identity": {
+          "name": "Aegis Briefing"
+        },
+        "tools": {
+          "profile": "minimal",
+          "allow": ["web_fetch"],
+          "elevated": {
+            "enabled": false
+          }
+        }
+      },
+      {
+        "id": "content",
+        "name": "Content Engine",
+        "model": {
+          "primary": "anthropic/claude-sonnet-4-6",
+          "fallbacks": ["anthropic/claude-haiku-4-5"]
+        },
+        "identity": {
+          "name": "Aegis Content"
+        },
+        "tools": {
+          "profile": "minimal",
+          "allow": ["web_fetch", "web_search"],
+          "elevated": {
+            "enabled": false
+          }
+        }
+      }
+    ]
+  },
+  "channels": {
+    "defaults": {
+      "groupPolicy": "disabled",
+      "heartbeat": {
+        "showAlerts": true,
+        "showOk": false
+      }
+    },
+    "whatsapp": {
+      "dmPolicy": "pairing",
+      "allowFrom": ["12159805111"],
+      "defaultTo": "12159805111",
+      "groupPolicy": "disabled",
+      "sendReadReceipts": true,
+      "ackReaction": {
+        "emoji": "🛡️",
+        "direct": true,
+        "group": "never"
+      },
+      "actions": {
+        "reactions": true,
+        "sendMessage": true,
+        "polls": false
+      },
+      "textChunkLimit": 4000,
+      "mediaMaxMb": 50
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "load": {
+        "extraDirs": ["../hooks"]
+      },
+      "entries": {
+        "audit-logger": {
+          "enabled": true,
+          "env": {
+            "DATA_API_URL": "http://data-api:8000",
+            "DATA_API_TOKEN": "${DATA_API_TOKEN}"
+          }
+        },
+        "pii-guard": {
+          "enabled": true,
+          "env": {
+            "DATA_API_URL": "http://data-api:8000",
+            "DATA_API_TOKEN": "${DATA_API_TOKEN}"
+          }
+        },
+        "budget-guard": {
+          "enabled": true,
+          "env": {
+            "DATA_API_URL": "http://data-api:8000",
+            "DATA_API_TOKEN": "${DATA_API_TOKEN}",
+            "LLM_DAILY_BUDGET_USD": "${LLM_DAILY_BUDGET_USD}",
+            "LLM_MONTHLY_BUDGET_USD": "${LLM_MONTHLY_BUDGET_USD}"
+          }
+        },
+        "session-memory": { "enabled": true },
+        "boot-md": { "enabled": true }
+      }
+    }
+  },
+  "skills": {
+    "load": {
+      "extraDirs": ["../skills"],
+      "watch": true,
+      "watchDebounceMs": 2000
+    },
+    "limits": {
+      "maxSkillsInPrompt": 12,
+      "maxSkillsPromptChars": 16000,
+      "maxSkillFileBytes": 65536
+    }
+  },
+  "tools": {
+    "web": {
+      "fetch": {
+        "enabled": true,
+        "maxChars": 32000,
+        "timeoutSeconds": 30,
+        "cacheTtlMinutes": 5,
+        "maxRedirects": 3
+      },
+      "search": {
+        "enabled": true,
+        "maxResults": 5,
+        "timeoutSeconds": 15,
+        "cacheTtlMinutes": 10
+      }
+    },
+    "exec": {
+      "security": "deny",
+      "timeoutSec": 60
+    },
+    "fs": {
+      "workspaceOnly": true
+    },
+    "loopDetection": {
+      "enabled": true,
+      "warningThreshold": 5,
+      "criticalThreshold": 10,
+      "globalCircuitBreakerThreshold": 20
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "store": "./cron/jobs.json",
+    "maxConcurrentRuns": 3,
+    "sessionRetention": "3d"
+  },
+  "session": {
+    "maintenance": {
+      "pruneAfter": "30d",
+      "maxEntries": 500
+    }
+  },
+  "memory": {
+    "backend": "builtin",
+    "citations": "auto"
+  },
+  "logging": {
+    "level": "info",
+    "consoleLevel": "info",
+    "consoleStyle": "compact",
+    "redactSensitive": "tools",
+    "redactPatterns": [
+      "\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b",
+      "\\b\\d{3}-\\d{2}-\\d{4}\\b",
+      "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"
+    ]
+  },
+  "ui": {
+    "assistant": {
+      "name": "Aegis",
+      "avatar": "shield"
+    }
+  }
+}

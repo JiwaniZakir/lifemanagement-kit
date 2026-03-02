@@ -1,14 +1,18 @@
 # =============================================================================
-# Cloudflare Tunnel — routes external traffic to Traefik
+# Cloudflare Tunnel — routes external traffic to OpenClaw gateway
 # =============================================================================
 # The TUNNEL_TOKEN env var is set in .env and authenticates this tunnel.
-# All traffic enters via Cloudflare's edge and exits here to Traefik.
+# All traffic enters via Cloudflare's edge and exits here to OpenClaw.
+# Traefik no longer exists — cloudflared routes directly to the gateway.
 # =============================================================================
 
+# Authentication is via TUNNEL_TOKEN env var (set in docker-compose.yml).
+# When using token-based auth, cloudflared ignores this config file entirely
+# (it uses `tunnel run` with the token). The tunnel name and ingress rules
+# below are kept as documentation of the intended routing.
 tunnel: aegis
-credentials-file: /etc/cloudflared/creds.json
 
 ingress:
   - hostname: "*.aegis.internal"
-    service: http://traefik:80
+    service: http://openclaw-gateway:18789
   - service: http_status:404

@@ -17,20 +17,18 @@ secrets/age-key.txt
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *.egg-info/
 .venv/
 dist/
 build/
 
+# Databases
+*.db
+*.sqlite3
+
 # Node
 node_modules/
-.next/
-out/
-
-# Mobile
-mobile/.expo/
-mobile/ios/
-mobile/android/
 
 # IDE
 .vscode/
@@ -54,15 +52,13 @@ logs/
 
 # Test / coverage
 .coverage
+coverage/
 htmlcov/
 .pytest_cache/
+.ruff_cache/
 
 # uv
 .python-version
-
-# Playwright
-playwright-report/
-test-results/
 
 # Docker runtime
 docker-compose.extra.yml

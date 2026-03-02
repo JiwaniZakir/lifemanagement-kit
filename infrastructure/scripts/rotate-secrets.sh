@@ -2,8 +2,8 @@
 # =============================================================================
 # Aegis — Secret Rotation Script
 # =============================================================================
-# Rotates internal secrets (DB password, Redis password, JWT secret, etc.)
-# Re-encrypts with SOPS and restarts affected services.
+# Rotates internal secrets (DB password, API token, encryption key).
+# Restarts affected services after update.
 #
 # Usage: ./infrastructure/scripts/rotate-secrets.sh
 # =============================================================================
@@ -33,9 +33,22 @@ log_info "Current .env backed up"
 
 # --- Generate new secrets ---
 NEW_POSTGRES_PW=$(generate_secret)
-NEW_REDIS_PW=$(generate_secret)
-NEW_JWT_SECRET=$(generate_secret)
-NEW_ENCRYPTION_KEY=$(generate_secret)
+NEW_DATA_API_TOKEN=$(generate_secret)
+
+# DANGER: Rotating the encryption key requires re-encrypting ALL stored
+# credentials with the new key BEFORE the old key is discarded. This script
+# does NOT perform re-encryption. Rotating the encryption key without
+# re-encryption will make all encrypted credentials permanently unreadable.
+ROTATE_ENCRYPTION_KEY="${ROTATE_ENCRYPTION_KEY:-false}"
+if [ "$ROTATE_ENCRYPTION_KEY" = "true" ]; then
+    log_warn "ROTATE_ENCRYPTION_KEY=true — generating new encryption key."
+    log_warn "YOU MUST re-encrypt all stored credentials before restarting services!"
+    log_warn "Run: data-api credential re-encryption migration BEFORE 'docker compose up'."
+    NEW_ENCRYPTION_KEY=$(generate_secret)
+else
+    log_info "Skipping encryption key rotation (set ROTATE_ENCRYPTION_KEY=true to rotate)"
+    NEW_ENCRYPTION_KEY=""
+fi
 
 log_info "New secrets generated"
 
@@ -52,9 +65,10 @@ update_env_var() {
 }
 
 update_env_var "POSTGRES_PASSWORD" "$NEW_POSTGRES_PW"
-update_env_var "REDIS_PASSWORD" "$NEW_REDIS_PW"
-update_env_var "JWT_SECRET" "$NEW_JWT_SECRET"
-update_env_var "ENCRYPTION_MASTER_KEY" "$NEW_ENCRYPTION_KEY"
+update_env_var "DATA_API_TOKEN" "$NEW_DATA_API_TOKEN"
+if [ -n "$NEW_ENCRYPTION_KEY" ]; then
+    update_env_var "ENCRYPTION_MASTER_KEY" "$NEW_ENCRYPTION_KEY"
+fi
 
 rm -f "${ENV_FILE}.bak"
 chmod 600 "$ENV_FILE"
@@ -75,7 +89,15 @@ docker compose down
 docker compose up -d
 
 log_info "Waiting for services to become healthy..."
-sleep 15
+for i in $(seq 1 30); do
+    if docker compose ps --format json 2>/dev/null | grep -q '"unhealthy"'; then
+        sleep 5
+    elif docker compose ps --format json 2>/dev/null | grep -q '"starting"'; then
+        sleep 5
+    else
+        break
+    fi
+done
 
 # --- Verify ---
 docker compose ps

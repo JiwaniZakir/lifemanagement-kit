@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "jobId": "sync-finance",
+      "agentId": "sync",
+      "name": "Sync Finances",
+      "description": "Pull latest transactions and balances from Plaid and Schwab via data-api",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 */6 * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute financial data sync. Call POST http://data-api:8000/finance/sync with header Authorization: Bearer ${DATA_API_TOKEN}. Report only if errors occur. Do not deliver results to any channel.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
+      "jobId": "sync-calendar",
+      "agentId": "sync",
+      "name": "Sync Calendar",
+      "description": "Sync Google Calendar and Outlook events via data-api",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/15 * * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute calendar sync. Call POST http://data-api:8000/calendar/sync with header Authorization: Bearer ${DATA_API_TOKEN}. Report only if errors occur.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
+      "jobId": "sync-lms",
+      "agentId": "sync",
+      "name": "Sync LMS",
+      "description": "Sync Canvas and Blackboard assignments and grades",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/30 * * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute LMS sync covering Canvas and Blackboard. Call POST http://data-api:8000/lms/sync with header Authorization: Bearer ${DATA_API_TOKEN}. Report only if errors occur.",
+        "timeoutSeconds": 300
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
+      "jobId": "sync-health",
+      "agentId": "sync",
+      "name": "Sync Health",
+      "description": "Process Garmin and Apple Health data via data-api",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 * * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute health data sync. Call POST http://data-api:8000/health/sync with header Authorization: Bearer ${DATA_API_TOKEN}. Report only if errors occur.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
+      "jobId": "morning-briefing",
+      "agentId": "briefing",
+      "name": "Morning Briefing",
+      "description": "Generate and deliver the daily morning briefing at 6 AM ET",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 6 * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Generate the morning briefing for Zakir. Call GET http://data-api:8000/briefing/today with header Authorization: Bearer ${DATA_API_TOKEN}. The response contains structured briefing data. Summarize it into 3-5 concise bullet points covering: (1) today's calendar and deadlines, (2) financial alerts if any, (3) health metrics vs goals (175g protein, 1900 cal), (4) anything requiring immediate action. Keep it under 200 words. Deliver via WhatsApp.",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "whatsapp",
+        "bestEffort": true
+      }
+    },
+    {
+      "jobId": "generate-content",
+      "agentId": "content",
+      "name": "Generate Content",
+      "description": "Create daily LinkedIn and X thought-leadership posts at 7 AM ET",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Generate today's thought-leadership content. Call POST http://data-api:8000/content/generate with header Authorization: Bearer ${DATA_API_TOKEN} and body {\"platform\": \"linkedin\", \"topic\": \"auto\", \"style\": \"thought_leader\", \"user_id\": \"default\"}. Announce what was generated with a brief summary of the post topics. If any posts failed to publish, report the errors.",
+        "timeoutSeconds": 240
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "whatsapp",
+        "bestEffort": true
+      }
+    },
+    {
+      "jobId": "weekly-digest",
+      "agentId": "briefing",
+      "name": "Weekly Digest",
+      "description": "Generate and deliver the weekly summary report on Sunday at 8 PM ET",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * 0",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Generate the weekly digest. Call GET http://data-api:8000/briefing/weekly with header Authorization: Bearer ${DATA_API_TOKEN}. Summarize the weekly data into a concise report covering: spending trends, assignment completion rates, health goal adherence, content performance metrics, and key recommendations for the coming week. Deliver via WhatsApp.",
+        "timeoutSeconds": 240
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "whatsapp",
+        "bestEffort": true
+      }
+    },
+    {
+      "jobId": "security-audit",
+      "agentId": "briefing",
+      "name": "Weekly Security Audit",
+      "description": "Run security audit check every Monday at 9 AM ET",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * 1",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Perform the weekly security audit. Call GET http://data-api:8000/audit/verify with header Authorization: Bearer ${DATA_API_TOKEN} to verify audit log integrity. Then call GET http://data-api:8000/budget/usage with the same auth to check LLM budget status. Report any anomalies: tampered audit entries, budget threshold breaches, or unusual patterns. Keep the report concise and actionable.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "whatsapp",
+        "bestEffort": true
+      }
+    }
+  ]
+}
