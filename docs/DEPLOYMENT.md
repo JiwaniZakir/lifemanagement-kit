@@ -32,8 +32,8 @@ Log out and back in for the group change to take effect.
 ## 3. Clone and Bootstrap
 
 ```bash
-git clone https://github.com/JiwaniZakir/aegis.git
-cd aegis
+git clone https://github.com/JiwaniZakir/lifemanagement-kit.git
+cd lifemanagement-kit
 
 # Bootstrap generates secrets, starts services, runs migrations
 ./infrastructure/scripts/bootstrap.sh

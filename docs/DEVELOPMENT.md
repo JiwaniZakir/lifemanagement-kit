@@ -15,8 +15,8 @@ This guide covers local development, testing, code style, and how to extend Aegi
 
 ```bash
 # Clone the repository
-git clone https://github.com/JiwaniZakir/aegis.git
-cd aegis
+git clone https://github.com/JiwaniZakir/lifemanagement-kit.git
+cd lifemanagement-kit
 
 # Bootstrap (generates .env, starts services, runs migrations)
 ./infrastructure/scripts/bootstrap.sh
