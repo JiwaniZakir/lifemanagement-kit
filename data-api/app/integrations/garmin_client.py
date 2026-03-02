@@ -58,6 +58,7 @@ class GarminClient(BaseIntegration):
         reraise=True,
     )
     async def get_stats(self, target_date: date | None = None) -> dict:
+        """Fetch daily stats summary (steps, calories, distance) for a date."""
         if target_date is None:
             target_date = date.today()
         client = await self._ensure_client()
@@ -72,6 +73,7 @@ class GarminClient(BaseIntegration):
         reraise=True,
     )
     async def get_steps(self, days: int = 7) -> list[dict]:
+        """Fetch daily step counts for the past N days."""
         client = await self._ensure_client()
         results: list[dict] = []
         today = date.today()
@@ -98,6 +100,7 @@ class GarminClient(BaseIntegration):
         reraise=True,
     )
     async def get_heart_rate(self, days: int = 7) -> list[dict]:
+        """Fetch daily heart rate data (resting, max, avg) for the past N days."""
         client = await self._ensure_client()
         results: list[dict] = []
         today = date.today()
@@ -125,6 +128,7 @@ class GarminClient(BaseIntegration):
         reraise=True,
     )
     async def get_sleep(self, days: int = 7) -> list[dict]:
+        """Fetch daily sleep data (duration, phases) for the past N days."""
         client = await self._ensure_client()
         results: list[dict] = []
         today = date.today()
@@ -149,6 +153,7 @@ class GarminClient(BaseIntegration):
         return results
 
     async def store_metrics(self, metrics: list[dict]) -> int:
+        """Persist health metrics from Garmin to the database."""
         stored = 0
         for m in metrics:
             try:
@@ -179,6 +184,7 @@ class GarminClient(BaseIntegration):
         return stored
 
     async def sync(self) -> None:
+        """Pull today's steps, heart rate, sleep, and calories from Garmin."""
         await self._ensure_client()
         metrics: list[dict] = []
         ts_now = datetime.now(UTC).isoformat()
@@ -239,6 +245,7 @@ class GarminClient(BaseIntegration):
         )
 
     async def health_check(self) -> bool:
+        """Verify Garmin Connect login credentials are valid."""
         try:
             await self._ensure_client()
             return True

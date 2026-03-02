@@ -50,6 +50,7 @@ class SchwabClient(BaseIntegration):
         self._callback_url = settings.schwab_callback_url
 
     def get_authorization_url(self) -> tuple[str, str]:
+        """Generate Schwab OAuth authorization URL and CSRF state token."""
         state = secrets.token_urlsafe(32)
         self._pending_oauth_states[state] = (
             self.user_id,
@@ -73,6 +74,7 @@ class SchwabClient(BaseIntegration):
         reraise=True,
     )
     async def authenticate(self, authorization_code: str, *, state: str) -> dict:
+        """Exchange an OAuth authorization code for access and refresh tokens."""
         pending = self._pending_oauth_states.pop(state, None)
         if pending is None:
             raise SchwabAuthError("Invalid or expired OAuth state parameter")
@@ -152,6 +154,7 @@ class SchwabClient(BaseIntegration):
         reraise=True,
     )
     async def get_portfolio(self) -> dict:
+        """Fetch portfolio positions and total value across all Schwab accounts."""
         data = await self._api_request("GET", "/accounts")
         accounts_data = data if isinstance(data, list) else data.get("accounts", [])
 
@@ -195,6 +198,7 @@ class SchwabClient(BaseIntegration):
         *,
         limit_price: float | None = None,
     ) -> dict:
+        """Preview a trade order (step 1 of 2). Returns a confirmation token."""
         if order_type.upper() == "LIMIT" and limit_price is None:
             raise SchwabTradeError("limit_price is required for LIMIT orders")
 
@@ -238,6 +242,7 @@ class SchwabClient(BaseIntegration):
         }
 
     async def confirm_trade(self, confirmation_token: str) -> dict:
+        """Execute a previously previewed trade (step 2 of 2)."""
         self._cleanup_expired_confirmations()
         pending = self._pending_confirmations.pop(confirmation_token, None)
         if pending is None:
@@ -269,9 +274,11 @@ class SchwabClient(BaseIntegration):
             cls._pending_confirmations.pop(t, None)
 
     async def sync(self) -> None:
+        """Pull latest portfolio data from Schwab."""
         await self.get_portfolio()
 
     async def health_check(self) -> bool:
+        """Verify Schwab API connectivity and OAuth tokens."""
         try:
             await self.get_portfolio()
             return True

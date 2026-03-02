@@ -60,8 +60,16 @@ if command -v age &>/dev/null; then
     rm "$DUMP_FILE"
     log_info "Encrypted: $ENCRYPTED_FILE"
 else
-    log_warn "age not installed — backup stored unencrypted"
-    ENCRYPTED_FILE="$DUMP_FILE"
+    log_error "age is required for encrypted backups but is not installed."
+    log_error "Install age: https://github.com/FiloSottile/age#installation"
+    log_error "To bypass (NOT RECOMMENDED): set AEGIS_ALLOW_UNENCRYPTED_BACKUP=true"
+    if [[ "${AEGIS_ALLOW_UNENCRYPTED_BACKUP:-}" == "true" ]]; then
+        log_warn "Storing backup UNENCRYPTED (AEGIS_ALLOW_UNENCRYPTED_BACKUP=true)"
+        ENCRYPTED_FILE="$DUMP_FILE"
+    else
+        rm -f "$DUMP_FILE"
+        exit 1
+    fi
 fi
 
 # --- Step 3: Clean up old local backups (keep last 7) ---

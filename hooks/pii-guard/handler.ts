@@ -8,6 +8,10 @@
  * prevent double-replacement (e.g. an SSN being partially matched by the
  * account-number pattern).
  *
+ * Per security policy, emails and phone numbers are NOT redacted — they are
+ * acceptable to show in full (see aegis-security skill). Only SSNs, credit
+ * card numbers, and bank account numbers are redacted.
+ *
  * Mutates event.context.content in place with redacted text.
  * Redaction counts are logged to stderr so they are visible in container logs.
  *
@@ -30,7 +34,7 @@ interface InternalHookEvent {
 interface PiiPattern {
   label: string;
   pattern: RegExp;
-  replacement: string;
+  replacement: string | ((match: string) => string);
 }
 
 // ---------------------------------------------------------------------------
@@ -59,33 +63,11 @@ const PII_PATTERNS: PiiPattern[] = [
     replacement: "[CARD_NUMBER]",
   },
 
-  // Bank routing/account numbers: 10-17 consecutive digits
+  // Bank routing/account numbers: 10-17 consecutive digits — preserve last 4
   {
     label: "ACCOUNT_NUMBER",
-    pattern: /\b\d{10,17}\b/g,
-    replacement: "[ACCOUNT_NUMBER]",
-  },
-
-  // Email addresses
-  {
-    label: "EMAIL",
-    pattern: /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g,
-    replacement: "[EMAIL]",
-  },
-
-  // US phone numbers
-  {
-    label: "PHONE",
-    pattern: /\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g,
-    replacement: "[PHONE]",
-  },
-
-  // Street addresses — house number + street name heuristic
-  {
-    label: "ADDRESS",
-    pattern:
-      /\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,4}(?:St(?:reet)?|Ave(?:nue)?|Blvd|Dr(?:ive)?|Rd|Ln|Ct|Pl|Way)\b/gi,
-    replacement: "[ADDRESS]",
+    pattern: /\b(\d{10,17})\b/g,
+    replacement: (match: string) => `****${match.slice(-4)}`,
   },
 ];
 
@@ -109,9 +91,9 @@ function redact(text: string): RedactionResult {
     pattern.lastIndex = 0;
 
     let matchCount = 0;
-    redacted = redacted.replace(pattern, () => {
+    redacted = redacted.replace(pattern, (match: string) => {
       matchCount++;
-      return replacement;
+      return typeof replacement === "function" ? replacement(match) : replacement;
     });
 
     if (matchCount > 0) {

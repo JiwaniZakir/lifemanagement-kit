@@ -70,7 +70,7 @@
       {
         "id": "sync",
         "name": "Sync Worker",
-        "model": "anthropic/claude-haiku-4-5-20251001",
+        "model": "anthropic/claude-haiku-4-5",
         "identity": {
           "name": "Aegis Sync"
         },
@@ -85,7 +85,7 @@
       {
         "id": "briefing",
         "name": "Briefing Agent",
-        "model": "anthropic/claude-haiku-4-5-20251001",
+        "model": "anthropic/claude-haiku-4-5",
         "identity": {
           "name": "Aegis Briefing"
         },

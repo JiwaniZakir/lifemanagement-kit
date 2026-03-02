@@ -262,3 +262,10 @@ NEXT WEEK PREVIEW
 > You have 2 more events today (Sprint Planning at 2:00 PM, 1:1 at 4:30 PM). Your CS 260 lab is due tomorrow night and the CS 164 homework is overdue. Spending is on track this week at $485, down 5% from last week. You are at 112g protein so far today -- need 63g more to hit your target. Sleep was solid at 7.2 hours last night.
 >
 > Priority: submit that CS 164 homework and then lock in time for the CS 260 lab.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

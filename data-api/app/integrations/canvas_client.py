@@ -61,6 +61,7 @@ class CanvasClient(BaseIntegration):
         reraise=True,
     )
     async def get_courses(self) -> list[dict]:
+        """Fetch active courses from Canvas."""
         data = await self._api_request(
             "/courses", params={"enrollment_state": "active", "per_page": 100}
         )
@@ -81,6 +82,7 @@ class CanvasClient(BaseIntegration):
         reraise=True,
     )
     async def get_assignments(self, course_id: int) -> list[dict]:
+        """Fetch all assignments for a course, ordered by due date."""
         data = await self._api_request(
             f"/courses/{course_id}/assignments",
             params={"per_page": 100, "order_by": "due_at"},
@@ -106,6 +108,7 @@ class CanvasClient(BaseIntegration):
         reraise=True,
     )
     async def get_grades(self, course_id: int) -> list[dict]:
+        """Fetch submission grades for the authenticated user in a course."""
         data = await self._api_request(
             f"/courses/{course_id}/students/submissions",
             params={"student_ids[]": "self", "per_page": 100},
@@ -128,6 +131,7 @@ class CanvasClient(BaseIntegration):
         reraise=True,
     )
     async def get_announcements(self, course_id: int) -> list[dict]:
+        """Fetch recent announcements for a course."""
         data = await self._api_request(
             "/announcements",
             params={"context_codes[]": f"course_{course_id}", "per_page": 20},
@@ -144,6 +148,7 @@ class CanvasClient(BaseIntegration):
         ]
 
     async def store_assignments(self, course_name: str, assignments: list[dict]) -> int:
+        """Persist new Canvas assignments to the database, skipping duplicates."""
         stored = 0
         for a in assignments:
             external_id = f"canvas_{a['id']}"
@@ -179,6 +184,7 @@ class CanvasClient(BaseIntegration):
         return stored
 
     async def sync(self) -> None:
+        """Sync all courses and their assignments from Canvas."""
         courses = await self.get_courses()
         for course in courses:
             assignments = await self.get_assignments(course["id"])
@@ -188,6 +194,7 @@ class CanvasClient(BaseIntegration):
         )
 
     async def health_check(self) -> bool:
+        """Verify Canvas API connectivity and credentials."""
         try:
             await self.get_courses()
             return True

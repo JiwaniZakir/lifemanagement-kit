@@ -27,6 +27,9 @@ def encrypt_field(plaintext: str, master_key: bytes, context: str | None = None)
 
     nonce = os.urandom(12)
     aesgcm = AESGCM(master_key)
+    # AAD (Additional Authenticated Data) binds ciphertext to a context (e.g. user_id).
+    # This prevents cross-user decryption: ciphertext encrypted for user A cannot be
+    # decrypted with user B's context even if the same master key is used.
     aad = context.encode("utf-8") if context is not None else None
     ciphertext = aesgcm.encrypt(nonce, plaintext.encode("utf-8"), aad)
     return base64.b64encode(nonce + ciphertext).decode("ascii")

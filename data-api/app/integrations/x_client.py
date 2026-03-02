@@ -121,6 +121,7 @@ class XClient(BaseIntegration):
             return {"ok": False, "error": f"API returned {exc.response.status_code}"}
 
     async def health_check(self) -> bool:
+        """Verify X API v2 connectivity and bearer token."""
         try:
             settings = get_settings()
             if not settings.x_bearer_token:

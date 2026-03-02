@@ -68,6 +68,7 @@ class OutlookCalendarClient(BaseIntegration):
             return resp.json()
 
     async def get_today_events(self) -> list[dict]:
+        """Fetch all events for today via Microsoft Graph."""
         now = datetime.now(UTC)
         day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
@@ -78,6 +79,7 @@ class OutlookCalendarClient(BaseIntegration):
         start: datetime | None = None,
         end: datetime | None = None,
     ) -> list[dict]:
+        """Fetch calendar events in a time range via Microsoft Graph."""
         now = datetime.now(UTC)
         start = start or now
         end = end or now + timedelta(days=7)
@@ -106,6 +108,7 @@ class OutlookCalendarClient(BaseIntegration):
         ]
 
     async def sync(self) -> dict[str, Any]:
+        """Pull events from Outlook Calendar."""
         events = await self.get_events()
         await self._audit(
             action="outlook_sync",
@@ -115,6 +118,7 @@ class OutlookCalendarClient(BaseIntegration):
         return {"ok": True, "events": len(events)}
 
     async def health_check(self) -> bool:
+        """Verify Microsoft Graph API connectivity."""
         try:
             await self._api_request("/me")
             return True

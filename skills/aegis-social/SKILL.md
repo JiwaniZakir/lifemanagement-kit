@@ -99,3 +99,10 @@ NEVER post identical text to both platforms. Rewrite for each:
 ### Rate Limits
 
 5 posts per hour per platform. If hit, inform the user and suggest a time for the next slot. NEVER auto-retry.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

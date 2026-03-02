@@ -9,7 +9,7 @@
  *
  * Claude pricing (as of 2025-02):
  *   claude-sonnet-4-6         : $3.00 / 1M input,  $15.00 / 1M output
- *   claude-haiku-4-5-20251001 : $0.80 / 1M input,  $4.00  / 1M output
+ *   claude-haiku-4-5           : $0.80 / 1M input,  $4.00  / 1M output
  *
  * Token estimation heuristic: 1 token ~ 4 characters.
  *
@@ -57,7 +57,7 @@ const CHARS_PER_TOKEN = 4;
 // Pricing: USD per 1M tokens
 const PRICING: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-6": { input: 3.0, output: 15.0 },
-  "claude-haiku-4-5-20251001": { input: 0.8, output: 4.0 },
+  "claude-haiku-4-5": { input: 0.8, output: 4.0 },
   default: { input: 3.0, output: 15.0 },
 };
 

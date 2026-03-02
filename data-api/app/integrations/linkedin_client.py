@@ -110,6 +110,7 @@ class LinkedInClient(BaseIntegration):
         return {"ok": True, "detail": "Post-only integration"}
 
     async def health_check(self) -> bool:
+        """Verify LinkedIn API access token validity."""
         try:
             settings = get_settings()
             if not settings.linkedin_access_token:

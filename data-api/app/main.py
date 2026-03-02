@@ -6,10 +6,12 @@ import hmac
 import time
 import uuid
 
+import asyncpg
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.api.audit import router as audit_router
 from app.api.briefing import router as briefing_router
@@ -93,7 +95,16 @@ def create_app() -> FastAPI:
                         },
                     )
                     await session.commit()
-            except Exception:
+            except (
+                SQLAlchemyError,
+                asyncpg.PostgresError,
+                asyncpg.InterfaceError,
+                OSError,
+            ):
+                # SQLAlchemyError: query-level DB failures
+                # asyncpg.PostgresError: auth/protocol errors from Postgres
+                # asyncpg.InterfaceError: connection pool cannot reach Postgres
+                # OSError: socket-level connection failures
                 logger.error("audit_write_failed", path=request.url.path)
 
         logger.info(

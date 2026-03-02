@@ -160,3 +160,10 @@ web_fetch("http://data-api:8000/finance/schwab/trade/confirm", {
 - NEVER expose raw account numbers, routing numbers, or card numbers. The API masks these already -- double-check.
 - Schwab trades require two steps (preview then confirm). ALWAYS show the preview to the user and get explicit approval before calling confirm.
 - When data seems stale, call `POST /finance/sync` first, then re-fetch.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

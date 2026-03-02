@@ -123,15 +123,9 @@ web_fetch("http://data-api:8000/health/sync?user_id=default", {
 
 ## Guidelines
 
-### Daily Goals (User's Targets)
+### Daily Goals
 
-| Metric | Target |
-|--------|--------|
-| Protein | 175g |
-| Calories | 1,900 (limit) |
-| Steps | 10,000 |
-| Sleep | 7-9 hours |
-| Water | 100 oz |
+Refer to USER.md for personalized targets (protein, calories, steps, sleep, water). Always use the user's configured goals rather than hardcoded values.
 
 ### Progress Reporting
 
@@ -153,6 +147,13 @@ Fetch 7-day data via `GET /health/summary?days=7`. Calculate averages, compare t
 
 ### Nutrition Notes
 
-- Protein is the user's priority at 175g/day. Suggest high-protein foods when behind.
-- The 1,900 calorie limit is an intentional deficit. Do not suggest eating more unless asked.
+- Protein is a priority goal. Suggest high-protein foods when behind.
+- The calorie limit is an intentional deficit. Do not suggest eating more unless asked.
 - NEVER provide medical advice. Report data and compare to stated goals only.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

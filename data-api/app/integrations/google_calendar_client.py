@@ -72,6 +72,7 @@ class GoogleCalendarClient(BaseIntegration):
     async def get_events(
         self, start: datetime | None = None, end: datetime | None = None
     ) -> list[dict]:
+        """Fetch calendar events in a time range, with pagination."""
         if start is None:
             start = datetime.now(UTC)
         if end is None:
@@ -106,14 +107,17 @@ class GoogleCalendarClient(BaseIntegration):
         return events
 
     async def get_today_events(self) -> list[dict]:
+        """Fetch all events for today."""
         today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=UTC)
         today_end = today_start + timedelta(days=1)
         return await self.get_events(start=today_start, end=today_end)
 
     async def sync(self) -> None:
+        """Pull events from Google Calendar for the default window."""
         await self.get_events()
 
     async def health_check(self) -> bool:
+        """Verify Google Calendar API connectivity and OAuth tokens."""
         try:
             await self.get_events(
                 start=datetime.now(UTC), end=datetime.now(UTC) + timedelta(hours=1)

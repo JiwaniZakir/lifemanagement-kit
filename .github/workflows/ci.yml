@@ -25,8 +25,38 @@ jobs:
       - name: Ruff format check
         run: cd data-api && uv run ruff format --check app/ tests/
 
+  hooks-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: TypeScript type-check hooks
+        run: npx tsc --noEmit --esModuleInterop --moduleResolution node --target ES2022 hooks/*/handler.ts
+
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+      DATA_API_TOKEN: test-token-for-ci
+      ENCRYPTION_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     steps:
       - uses: actions/checkout@v4
 
@@ -37,8 +67,14 @@ jobs:
       - name: Install dependencies
         run: cd data-api && uv sync --dev
 
-      - name: Run tests
-        run: cd data-api && uv run pytest tests/ -v --junitxml=results.xml
+      - name: Install pytest-cov
+        run: cd data-api && uv add --dev pytest-cov
+
+      - name: Run database migrations
+        run: cd data-api && uv run alembic upgrade head
+
+      - name: Run tests with coverage
+        run: cd data-api && uv run pytest tests/ -v --junitxml=results.xml --cov=app --cov-report=xml
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -47,6 +83,13 @@ jobs:
           name: test-results
           path: data-api/results.xml
 
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: data-api/coverage.xml
+
   docker-build:
     runs-on: ubuntu-latest
     steps:
@@ -54,6 +97,15 @@ jobs:
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
+        env:
+          POSTGRES_PASSWORD: placeholder
+          DATA_API_TOKEN: placeholder
+          ENCRYPTION_MASTER_KEY: placeholder
+          OPENCLAW_GATEWAY_TOKEN: placeholder
+          ANTHROPIC_API_KEY: placeholder
+
+      - name: Validate production compose config
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
         env:
           POSTGRES_PASSWORD: placeholder
           DATA_API_TOKEN: placeholder

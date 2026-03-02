@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,7 +28,7 @@ router = APIRouter(tags=["content"])
 
 class GenerateRequest(BaseModel):
     platform: str
-    topic: str
+    topic: str = Field(max_length=500)
     style: str | None = None
     user_id: str
 
@@ -41,7 +41,7 @@ class PublishRequest(BaseModel):
 class IngestRequest(BaseModel):
     user_id: str
     source: str
-    content: str
+    content: str = Field(max_length=50000)
     metadata: dict | None = None
 
 

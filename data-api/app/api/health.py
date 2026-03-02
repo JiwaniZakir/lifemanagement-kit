@@ -4,15 +4,20 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
 from app.models.health_metric import HealthMetric
 from app.security.audit import audit_log
+
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["health"])
 
@@ -169,7 +174,11 @@ async def sync_health(
         await client.sync()
         await audit_log(db, action="health_sync", resource_type="health")
         return {"ok": True}
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("health_sync_http_error", error=type(exc).__name__)
+        return {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("health_sync_db_error", error=type(exc).__name__)
         return {"ok": False, "error": str(type(exc).__name__)}
 
 
@@ -304,6 +313,7 @@ async def get_macros(
     fiber_g = round(totals.get("fiber", 0.0), 1)
     calories = round(totals.get("calories", 0.0), 1)
 
+    # Calorie conversion: 4 cal/g for protein and carbs, 9 cal/g for fat (Atwater factors)
     total_macro_cals = protein_g * 4 + carbs_g * 4 + fat_g * 9
     if total_macro_cals > 0:
         protein_pct = round(protein_g * 4 / total_macro_cals * 100)

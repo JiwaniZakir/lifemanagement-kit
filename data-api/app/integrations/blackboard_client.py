@@ -74,6 +74,7 @@ class BlackboardClient(BaseIntegration):
             return resp.json()
 
     async def get_courses(self) -> list[dict]:
+        """Fetch all courses from Blackboard Learn."""
         data = await self._api_request("/courses")
         return [
             {
@@ -85,6 +86,7 @@ class BlackboardClient(BaseIntegration):
         ]
 
     async def get_assignments(self, course_id: str) -> list[dict]:
+        """Fetch assignments for a specific course."""
         data = await self._api_request(f"/courses/{course_id}/contents")
         assignments = []
         for item in data.get("results", []):
@@ -105,6 +107,7 @@ class BlackboardClient(BaseIntegration):
         return assignments
 
     async def store_assignments(self, course_name: str, assignments: list[dict]) -> int:
+        """Persist new assignments to the database, skipping duplicates."""
         from sqlalchemy import select
 
         stored = 0
@@ -146,6 +149,7 @@ class BlackboardClient(BaseIntegration):
         return stored
 
     async def sync(self) -> dict[str, Any]:
+        """Pull all courses and assignments from Blackboard."""
         courses = await self.get_courses()
         total_stored = 0
         for course in courses:
@@ -162,6 +166,7 @@ class BlackboardClient(BaseIntegration):
         return {"ok": True, "courses": len(courses), "stored": total_stored}
 
     async def health_check(self) -> bool:
+        """Verify Blackboard API connectivity."""
         try:
             await self._api_request("/courses?limit=1")
             return True

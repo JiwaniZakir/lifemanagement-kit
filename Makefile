@@ -5,7 +5,35 @@
 COMPOSE := docker compose
 COMPOSE_PROD := docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
-.PHONY: dev prod down backup restore logs health migrate test lint format clean
+.PHONY: help dev prod down backup restore logs health migrate test lint format clean build security
+
+# --- Help (default target) ---
+help:
+	@echo "Aegis — Personal Intelligence Platform"
+	@echo ""
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "Development:"
+	@echo "  dev          Start all services locally"
+	@echo "  test         Run data-api tests"
+	@echo "  lint         Run ruff linter"
+	@echo "  format       Run ruff formatter"
+	@echo "  logs         Follow service logs"
+	@echo "  health       Check service health"
+	@echo ""
+	@echo "Database:"
+	@echo "  migrate      Run Alembic migrations"
+	@echo ""
+	@echo "Production:"
+	@echo "  prod         Deploy to production"
+	@echo "  build        Build all Docker images"
+	@echo "  backup       Create encrypted database backup"
+	@echo "  restore      Restore from backup (BACKUP_FILE=path)"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  down         Stop all services"
+	@echo "  clean        Stop services and remove volumes"
+	@echo "  security     Scan Docker image for vulnerabilities"
 
 # --- Development ---
 dev:
@@ -66,3 +94,12 @@ format:
 clean:
 	$(COMPOSE) down -v
 	rm -rf data-api/.venv
+
+# --- Build ---
+build:
+	$(COMPOSE) build
+
+# --- Security scan ---
+security:
+	docker build -f infrastructure/Dockerfile.data-api -t aegis-data-api:scan . && \
+	docker run --rm aquasec/trivy:latest image aegis-data-api:scan --severity HIGH,CRITICAL

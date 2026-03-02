@@ -48,6 +48,6 @@
 
 - Pearson Mastering has no public API -- uses Playwright browser automation, expect occasional breakage
 - LinkedIn API is limited to posting only -- feed reading uses scraper (rate-limited)
-- WhatsApp uses unofficial whatsapp-web.js bridge -- requires QR scan auth
+- WhatsApp uses OpenClaw native Baileys channel (requires QR scan auth)
 - Garmin Connect uses unofficial library -- may break on API changes
 - Apple Health data arrives via iOS Shortcuts automation posting to the data-api

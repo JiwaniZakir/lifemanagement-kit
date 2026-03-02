@@ -81,7 +81,14 @@ web_fetch("http://data-api:8000/calendar/sync?user_id=default", {
 - Present events in chronological order. Use 12-hour format (9:00 AM, not 09:00).
 - Group events by morning/afternoon/evening when listing a full day.
 - Call out back-to-back meetings (less than 15 min gap) and total meeting hours.
-- For free slot queries, only report gaps of 30+ minutes. Assume work day is 8:00 AM to 8:00 PM unless specified otherwise.
+- For free slot queries, only report gaps of 30+ minutes. Refer to USER.md for schedule preferences (active hours, work day boundaries).
 - Use relative language when helpful: "in 45 minutes", "this afternoon", "tomorrow morning".
 - To check for conflicts, fetch events and compare time ranges for overlap.
 - If data seems stale, call `POST /calendar/sync` first, then re-fetch.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

@@ -6,6 +6,7 @@
 #   ./infrastructure/scripts/bootstrap.sh
 #
 # What it does:
+#   0. Clones OpenClaw if not present
 #   1. Generates secrets if .env doesn't exist
 #   2. Starts Docker Compose services
 #   3. Waits for healthy containers
@@ -23,10 +24,27 @@ echo "=== Aegis Bootstrap ==="
 echo ""
 
 # ---------------------------------------------------------------------------
+# 0. Check for OpenClaw
+# ---------------------------------------------------------------------------
+if [ ! -d openclaw ]; then
+    echo "[0/5] OpenClaw not found — cloning..."
+    if command -v git &>/dev/null; then
+        git clone https://github.com/openclaw/openclaw.git openclaw
+        echo "      OpenClaw cloned successfully."
+    else
+        echo "      ERROR: git is required to clone OpenClaw."
+        echo "      Install git or manually clone https://github.com/openclaw/openclaw.git into ./openclaw/"
+        exit 1
+    fi
+else
+    echo "[0/5] OpenClaw directory found."
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Generate .env if it doesn't exist
 # ---------------------------------------------------------------------------
 if [ ! -f .env ]; then
-    echo "[1/4] Generating .env from template..."
+    echo "[1/5] Generating .env from template..."
     cp .env.example .env
 
     # Auto-generate secrets
@@ -47,7 +65,7 @@ if [ ! -f .env ]; then
     echo "      Generated secrets (DATA_API_TOKEN, ENCRYPTION_MASTER_KEY, POSTGRES_PASSWORD)"
     echo "      Edit .env to add your ANTHROPIC_API_KEY and integration credentials."
 else
-    echo "[1/4] .env already exists — skipping generation."
+    echo "[1/5] .env already exists — skipping generation."
 fi
 
 # Validate that required secrets are non-empty
@@ -70,7 +88,7 @@ fi
 # 2. Start services
 # ---------------------------------------------------------------------------
 echo ""
-echo "[2/4] Starting Docker Compose services..."
+echo "[2/5] Starting Docker Compose services..."
 docker compose up -d --build
 echo "      Services starting..."
 
@@ -78,7 +96,7 @@ echo "      Services starting..."
 # 3. Wait for healthy
 # ---------------------------------------------------------------------------
 echo ""
-echo "[3/4] Waiting for services to become healthy..."
+echo "[3/5] Waiting for services to become healthy..."
 
 MAX_WAIT=60
 WAITED=0
@@ -101,7 +119,7 @@ fi
 # 4. Run migrations
 # ---------------------------------------------------------------------------
 echo ""
-echo "[4/4] Running database migrations..."
+echo "[4/5] Running database migrations..."
 docker compose exec -T data-api uv run alembic upgrade head
 echo "      Migrations applied."
 

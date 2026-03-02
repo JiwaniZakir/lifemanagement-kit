@@ -25,6 +25,8 @@ services:
     restart: always
     environment:
       ENVIRONMENT: production
+      # Workers = 2 * CPU cores + 1 (default 4 for production)
+      # For 1GB container limit, keep at 2-4 workers
       UVICORN_WORKERS: 4
     deploy:
       resources:

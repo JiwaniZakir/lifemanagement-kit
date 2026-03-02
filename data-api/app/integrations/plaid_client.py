@@ -258,10 +258,12 @@ class PlaidClient(BaseIntegration):
         return balances
 
     async def sync(self) -> None:
+        """Pull latest transactions and balances from Plaid."""
         await self.sync_transactions()
         await self.get_balances()
 
     async def health_check(self) -> bool:
+        """Verify Plaid API connectivity and access token."""
         try:
             await self.get_balances()
             return True

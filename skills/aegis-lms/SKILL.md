@@ -117,3 +117,10 @@ Within the same urgency tier, higher point value wins.
 
 - If a class session is on the calendar for a course with an upcoming deadline, mention it.
 - If a heavy meeting day overlaps with a deadline, warn about the time crunch.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

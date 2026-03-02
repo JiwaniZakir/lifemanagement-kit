@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     azure_tenant_id: str = ""
 
     # --- Canvas ---
-    canvas_api_url: str = "https://canvas.drexel.edu/api/v1"
+    canvas_api_url: str = ""
 
     # --- Blackboard ---
     blackboard_url: str = ""

@@ -4,15 +4,20 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.account import Account
 from app.models.transaction import Transaction
 from app.security.audit import audit_log
+
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["finance"])
 
@@ -54,7 +59,7 @@ async def get_transactions(
     user_id: str = Query(default="default"),
     days: int = Query(default=30, ge=1, le=365),
     category: str | None = Query(default=None),
-    merchant: str | None = Query(default=None),
+    merchant: str | None = Query(default=None, max_length=200),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Query transactions with filters."""
@@ -205,7 +210,11 @@ async def sync_finance(
             "transactions_added": len(txns),
             "accounts_updated": len(balances),
         }
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("finance_sync_http_error", error=type(exc).__name__)
+        return {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("finance_sync_db_error", error=type(exc).__name__)
         return {"ok": False, "error": str(type(exc).__name__)}
 
 
@@ -468,6 +477,10 @@ async def check_affordability(
             round(balance_after / monthly_spending_avg, 1) if monthly_spending_avg > 0 else 0.0
         )
 
+    # Affordability verdict thresholds:
+    # >= 6 months runway after purchase = comfortable (healthy cushion)
+    # >= 2 months runway after purchase = tight (affordable but thin margin)
+    # < 2 months runway = not recommended (insufficient safety net)
     if months_runway >= 6:
         verdict = "comfortable"
         recommendation = "This purchase fits comfortably within your budget."

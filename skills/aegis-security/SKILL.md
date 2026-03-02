@@ -230,3 +230,10 @@ When an API call fails:
 > - Ad-hoc queries: $8.00 (17%)
 >
 > At this rate, you will hit about $62 by end of month -- well within budget.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

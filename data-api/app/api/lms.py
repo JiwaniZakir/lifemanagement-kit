@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.assignment import Assignment
 from app.security.audit import audit_log
+
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["lms"])
 
@@ -118,7 +123,11 @@ async def sync_lms(
         client = CanvasClient(user_id, db)
         await client.sync()
         results["canvas"] = {"ok": True}
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("lms_sync_canvas_http_error", error=type(exc).__name__)
+        results["canvas"] = {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("lms_sync_canvas_db_error", error=type(exc).__name__)
         results["canvas"] = {"ok": False, "error": str(type(exc).__name__)}
 
     # Blackboard
@@ -128,7 +137,11 @@ async def sync_lms(
         bb = BlackboardClient(user_id, db)
         bb_result = await bb.sync()
         results["blackboard"] = bb_result
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("lms_sync_blackboard_http_error", error=type(exc).__name__)
+        results["blackboard"] = {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("lms_sync_blackboard_db_error", error=type(exc).__name__)
         results["blackboard"] = {"ok": False, "error": str(type(exc).__name__)}
 
     await audit_log(db, action="lms_sync", resource_type="assignment", metadata=results)

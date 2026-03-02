@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +19,7 @@ router = APIRouter(tags=["credentials"])
 class CredentialCreate(BaseModel):
     user_id: str
     service_name: str
-    value: str
+    value: str = Field(max_length=10000)
 
 
 class CredentialOut(BaseModel):

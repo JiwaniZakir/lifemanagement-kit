@@ -268,3 +268,10 @@ When the user wants to improve a draft:
 
 **Response:**
 > Done. I have stored "The Future of Personal AI" (source: user article, ~2,400 words) as a content idea. This material will be available for reference during content generation.
+
+## Error Handling
+
+- `401 Unauthorized` -- Bearer token missing or invalid
+- `404 Not Found` -- Resource doesn't exist
+- `422 Validation Error` -- Invalid request parameters
+- `500 Internal Server Error` -- Integration failure; retry after sync

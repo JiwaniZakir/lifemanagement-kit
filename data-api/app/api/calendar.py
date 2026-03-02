@@ -5,11 +5,16 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from datetime import date as _date
 
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.security.audit import audit_log
+
+logger = structlog.get_logger()
 
 router = APIRouter(tags=["calendar"])
 
@@ -122,7 +127,11 @@ async def sync_calendar(
         gcal = GoogleCalendarClient(user_id, db)
         events = await gcal.get_events()
         results["google"] = {"ok": True, "events": len(events)}
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("calendar_sync_google_http_error", error=type(exc).__name__)
+        results["google"] = {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("calendar_sync_google_db_error", error=type(exc).__name__)
         results["google"] = {"ok": False, "error": str(type(exc).__name__)}
 
     # Outlook
@@ -132,7 +141,11 @@ async def sync_calendar(
         outlook = OutlookCalendarClient(user_id, db)
         outlook_result = await outlook.sync()
         results["outlook"] = outlook_result
-    except Exception as exc:
+    except httpx.HTTPError as exc:
+        logger.error("calendar_sync_outlook_http_error", error=type(exc).__name__)
+        results["outlook"] = {"ok": False, "error": str(type(exc).__name__)}
+    except SQLAlchemyError as exc:
+        logger.error("calendar_sync_outlook_db_error", error=type(exc).__name__)
         results["outlook"] = {"ok": False, "error": str(type(exc).__name__)}
 
     await audit_log(db, action="calendar_sync", resource_type="calendar", metadata=results)
