@@ -8,8 +8,8 @@ export default function HomePage() {
     <main className="hf0-type flex min-h-screen flex-col items-center justify-center bg-black">
       <div className="flex w-full flex-1 flex-col items-center justify-center">
         <HeroSection />
-        <SkillsShowcase />
         <FeatureWizard />
+        <SkillsShowcase />
       </div>
       <NavBar />
     </main>
