@@ -1,0 +1,196 @@
+---
+title: Adding Hooks
+description: How to create custom OpenClaw hooks
+---
+
+# Adding Hooks
+
+Hooks intercept OpenClaw events and can modify messages, log actions, or trigger side effects. They are TypeScript files discovered via `HOOK.md` configuration files.
+
+## Directory Structure
+
+```
+hooks/
+  my-hook/
+    HOOK.md
+    handler.ts
+```
+
+Each hook lives in its own directory inside `hooks/`. Two files are required:
+
+- **HOOK.md** -- YAML frontmatter configuration that OpenClaw uses to discover and register the hook
+- **handler.ts** -- TypeScript handler function that runs when events fire
+
+## HOOK.md Format
+
+```markdown
+---
+name: my-hook
+description: "What this hook does"
+metadata:
+  openclaw:
+    emoji: "icon"
+    events: ["message:sent"]
+---
+# My Hook
+
+Brief description of what this hook does and why.
+```
+
+### Supported Events
+
+| Event | When it fires |
+|-------|--------------|
+| `command` | When a user sends a command |
+| `message:sent` | When an agent sends an outbound message |
+| `message:received` | When an inbound message is received |
+
+## handler.ts Format
+
+```typescript
+interface InternalHookEvent {
+  type: "command" | "message" | "agent" | "gateway" | "session";
+  action: string;
+  sessionKey: string;
+  context: Record<string, unknown>;
+  timestamp: Date;
+  messages: string[];
+}
+
+export default function handler(event: InternalHookEvent): void {
+  // To send a message to the user:
+  event.messages.push("Hello from my hook");
+
+  // To mutate outbound content:
+  event.context.content = "modified content";
+
+  // To log (visible in container stderr):
+  console.error("[my-hook] something happened");
+}
+```
+
+### Key Patterns
+
+- **Sync hooks** (like pii-guard): mutate `event.context.content`, return `void`
+- **Async hooks** (like budget-guard): return `Promise<void>`, can make HTTP calls
+- **Fire-and-forget** (like audit-logger): do not await the HTTP call
+- **Block a message**: set `event.context.content = ""`
+
+## Registering Hooks
+
+Register hooks in `config/openclaw.json` under `hooks.internal.entries`:
+
+```json5
+{
+  hooks: {
+    internal: {
+      enabled: true,
+      load: { extraDirs: ["../hooks"] },
+      entries: {
+        "my-hook": {
+          enabled: true,
+          env: {
+            MY_VAR: "${MY_VAR}"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+OpenClaw discovers hooks via `HOOK.md` files, **not** `hook.json`.
+
+## Example: Content Filter Hook
+
+Here is a complete example of a sync hook that filters outbound content:
+
+### HOOK.md
+
+```markdown
+---
+name: content-filter
+description: "Filter unwanted patterns from outbound messages"
+metadata:
+  openclaw:
+    events: ["message:sent"]
+---
+# Content Filter
+
+Removes unwanted patterns from all outbound messages before delivery.
+```
+
+### handler.ts
+
+```typescript
+interface InternalHookEvent {
+  type: "command" | "message" | "agent" | "gateway" | "session";
+  action: string;
+  sessionKey: string;
+  context: Record<string, unknown>;
+  timestamp: Date;
+  messages: string[];
+}
+
+export default function handler(event: InternalHookEvent): void {
+  if (event.type !== "message" || event.action !== "sent") return;
+
+  const content = event.context.content as string | undefined;
+  if (!content) return;
+
+  // Replace unwanted patterns
+  event.context.content = content.replace(/secret/gi, "[REDACTED]");
+
+  // Notify user if content was modified
+  if (content !== event.context.content) {
+    event.messages.push("Content was filtered for security.");
+  }
+}
+```
+
+## Example: Async Webhook Hook
+
+Here is an example of an async hook that posts to an external webhook:
+
+### handler.ts
+
+```typescript
+export default async function handler(event: InternalHookEvent): Promise<void> {
+  if (event.type !== "message" || event.action !== "sent") return;
+
+  const webhookUrl = process.env.WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  // Fire-and-forget -- do not await
+  fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: event.action,
+      sessionKey: event.sessionKey,
+      timestamp: event.timestamp,
+    }),
+  }).catch((err) => {
+    console.error("[webhook-hook] Failed to post:", err.message);
+  });
+}
+```
+
+## Testing Hooks
+
+1. Register the hook in `config/openclaw.json`
+2. Restart the gateway: `docker compose restart openclaw-gateway`
+3. Send a test message through WhatsApp or the Control UI
+4. Check stderr logs for hook output: `docker compose logs openclaw-gateway | grep my-hook`
+
+## Aegis Hook Inventory
+
+Aegis ships with 3 custom hooks and uses 2 bundled hooks:
+
+| Hook | Events | Purpose |
+|------|--------|---------|
+| `audit-logger` | `command`, `message:sent`, `message:received` | Fire-and-forget POST to audit endpoint for hash-chain logging |
+| `pii-guard` | `message:sent` | Regex-scans outbound messages, redacts SSNs, card numbers, account numbers |
+| `budget-guard` | `message:sent` | Tracks LLM token spend, warns at 80/95%, blocks at 100% of budget |
+| `session-memory` | (bundled) | Saves session context on `/new` |
+| `boot-md` | (bundled) | Loads BOOT.md on gateway startup |

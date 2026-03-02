@@ -1,0 +1,286 @@
+---
+title: Hooks
+description: The 3 custom security hooks (audit-logger, pii-guard, budget-guard) and 2 bundled OpenClaw hooks that intercept agent events for audit logging, PII redaction, and LLM budget enforcement.
+---
+
+Hooks intercept agent events and run custom logic before delivery. They are discovered via `HOOK.md` files with YAML frontmatter. Handlers are TypeScript files using the `InternalHookEvent` type. Aegis uses 3 custom hooks and 2 bundled OpenClaw hooks.
+
+---
+
+## Hook Overview
+
+| Hook | Type | Events | Purpose |
+|------|------|--------|---------|
+| `audit-logger` | Custom | `command`, `message:sent`, `message:received` | Hash-chained audit logging to data-api |
+| `pii-guard` | Custom | `message:sent` | SSN/card/account redaction on outbound messages |
+| `budget-guard` | Custom | `message:sent` | LLM spend tracking with 80/95/100% thresholds |
+| `session-memory` | Bundled | session events | Saves session context on `/new` |
+| `boot-md` | Bundled | gateway startup | Loads BOOT.md on gateway startup |
+
+---
+
+## audit-logger
+
+**Directory:** `hooks/audit-logger/`
+
+**Events:** `command`, `message:sent`, `message:received`
+
+Fire-and-forget POST to `/audit/log` for every agent event. Non-blocking -- the HTTP POST never delays the event pipeline.
+
+### How it works
+
+1. Intercepts every command, sent message, and received message event
+2. Serializes the event as an AuditPayload:
+   - `action` -- the event type and action
+   - `resource_type` -- what resource was affected
+   - `session_key` -- the agent session identifier
+   - `detail` -- event detail (truncated to 500 chars)
+   - `channel` -- which channel the event came from
+   - `timestamp` -- when the event occurred
+3. POSTs to the data-api audit endpoint (`/audit/log`)
+4. Silently drops events if the data-api is unreachable
+
+### Why it exists
+
+Creates a tamper-evident record of everything the agent does. Every audit entry includes the SHA-256 hash of the previous entry, forming an immutable chain. Any break in the chain indicates tampering and triggers a critical security alert.
+
+### Failure behavior
+
+Fire-and-forget -- if the data-api is down, the event is silently dropped. The agent pipeline is never blocked by audit logging.
+
+---
+
+## pii-guard
+
+**Directory:** `hooks/pii-guard/`
+
+**Events:** `message:sent`
+
+Regex-scans outbound messages before delivery and redacts personally identifiable information.
+
+### Redaction patterns
+
+| Pattern | Example Input | Redacted Output |
+|---------|--------------|-----------------|
+| SSN (dashed) | `123-45-6789` | `[SSN]` |
+| SSN (spaced) | `123 45 6789` | `[SSN]` |
+| SSN (9 consecutive digits) | `123456789` | `[SSN]` |
+| Credit/debit cards (16 digits, any separators) | `4111-1111-1111-1111` | `[CARD_NUMBER]` |
+| Bank account numbers (10-17 consecutive digits) | `12345678901234` | `****1234` (preserves last 4) |
+
+### What is NOT redacted
+
+- **Email addresses** -- needed for context in responses
+- **Phone numbers** -- needed for context in responses
+
+### How it works
+
+1. Intercepts every outbound message (before WhatsApp delivery)
+2. Applies regex patterns most-specific-to-least-specific to prevent double-replacement
+3. Mutates `event.context.content` with redacted text
+4. Runs synchronously -- inline before delivery
+
+### Why it exists
+
+Prevents accidental PII exposure in WhatsApp messages. Even if an agent accidentally includes sensitive data in its response, the pii-guard catches it before the message reaches the user's phone.
+
+---
+
+## budget-guard
+
+**Directory:** `hooks/budget-guard/`
+
+**Events:** `message:sent`
+
+Tracks LLM token spend per message and enforces daily/monthly budgets.
+
+### Budget thresholds
+
+| Level | Threshold | Behavior |
+|-------|-----------|----------|
+| **OK** | < 80% | Normal operation |
+| **Warning** | 80-95% | Pushes warning message; suggests reducing non-essential calls |
+| **Critical** | 95-100% | Urgent warning; non-essential calls may block soon |
+| **Exceeded** | >= 100% | Blocks message, clears content, pauses AI calls |
+
+### Default budgets
+
+- **Daily:** $5 (configurable via `LLM_DAILY_BUDGET_USD`)
+- **Monthly:** $50 (configurable via `LLM_MONTHLY_BUDGET_USD`)
+
+### Token pricing
+
+| Model | Input (per 1M tokens) | Output (per 1M tokens) |
+|-------|----------------------|----------------------|
+| claude-haiku-4-5 | $0.80 | $4.00 |
+| claude-sonnet-4-6 | $3.00 | $15.00 |
+| claude-opus-4-6 | $15.00 | $75.00 |
+
+### How it works
+
+1. Intercepts every outbound message
+2. Estimates token count (1 token ~ 4 characters)
+3. Calculates cost based on the model used
+4. POSTs usage data to the data-api budget endpoint
+5. Checks current daily and monthly totals against thresholds
+6. At **Warning/Critical**: pushes a warning message via `event.messages.push()`
+7. At **Exceeded**: clears `event.context.content` to block the message
+
+### Failure behavior
+
+Fails open -- if the data-api is unreachable, the message is allowed through. This prevents budget tracking failures from breaking the agent.
+
+### State persistence
+
+All usage data is stored in PostgreSQL via the data-api's `llm_usage` table. This survives container restarts and ensures accurate tracking across deployments.
+
+---
+
+## session-memory (Bundled)
+
+**Type:** Bundled OpenClaw hook
+
+Automatically saves session context when you start a new conversation with `/new`. This preserves important context from the previous session so the agent can reference it later.
+
+---
+
+## boot-md (Bundled)
+
+**Type:** Bundled OpenClaw hook
+
+Loads `config/BOOT.md` on gateway startup to orient the agent. This file contains the agent's startup instructions, including its identity, rules, and API reference.
+
+---
+
+## Hook Configuration
+
+Hooks are configured in `config/openclaw.json` under `hooks.internal`:
+
+```json5
+{
+  hooks: {
+    internal: {
+      enabled: true,
+      load: { extraDirs: ["../hooks"] },
+      entries: {
+        "audit-logger": {
+          enabled: true,
+          env: {
+            DATA_API_URL: "http://data-api:8000",
+            DATA_API_TOKEN: "${DATA_API_TOKEN}",
+          },
+        },
+        "pii-guard": { enabled: true },
+        "budget-guard": {
+          enabled: true,
+          env: {
+            DATA_API_URL: "http://data-api:8000",
+            DATA_API_TOKEN: "${DATA_API_TOKEN}",
+            LLM_DAILY_BUDGET_USD: "${LLM_DAILY_BUDGET_USD}",
+            LLM_MONTHLY_BUDGET_USD: "${LLM_MONTHLY_BUDGET_USD}",
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+---
+
+## Hook Discovery
+
+OpenClaw discovers hooks via `HOOK.md` files (NOT `hook.json`). Each hook directory contains:
+
+```
+hooks/my-hook/
+├── HOOK.md         # YAML frontmatter with name, description, events
+└── handler.ts      # TypeScript handler function
+```
+
+### HOOK.md format
+
+```markdown
+---
+name: my-hook
+description: "What this hook does in one line"
+metadata:
+  openclaw:
+    events: ["message:sent"]
+---
+# My Hook
+
+What this hook does and why.
+```
+
+Available events: `command`, `message:sent`, `message:received`.
+
+---
+
+## Creating Your Own Hooks
+
+### Step 1: Create the Directory
+
+```bash
+mkdir -p hooks/my-hook
+```
+
+### Step 2: Write HOOK.md
+
+```markdown
+---
+name: my-hook
+description: "What this hook does in one line"
+metadata:
+  openclaw:
+    events: ["message:sent"]
+---
+# My Hook
+
+What this hook does and why.
+```
+
+### Step 3: Write handler.ts
+
+```typescript
+interface InternalHookEvent {
+  type: "command" | "message" | "agent" | "gateway" | "session";
+  action: string;
+  sessionKey: string;
+  context: Record<string, unknown>;
+  timestamp: Date;
+  messages: string[];
+}
+
+export default function handler(event: InternalHookEvent): void {
+  if (event.type !== "message" || event.action !== "sent") return;
+
+  const content = event.context.content as string | undefined;
+  if (!content) return;
+
+  // Modify outbound content:
+  event.context.content = content.replace(/secret/gi, "[REDACTED]");
+
+  // Send an extra message to the user:
+  event.messages.push("Hook processed this message.");
+}
+```
+
+### Key patterns
+
+- **Sync hooks** (like pii-guard): mutate `event.context.content`, return `void`
+- **Async hooks** (like budget-guard): return `Promise<void>`, can make HTTP calls
+- **Fire-and-forget** (like audit-logger): do not await the HTTP call
+- **Block a message**: set `event.context.content = ""`
+
+### Step 4: Register in openclaw.json
+
+```json5
+{
+  hooks: { internal: { entries: { "my-hook": { enabled: true } } } }
+}
+```
+
+### Step 5: Test
+
+Restart the gateway, send a test message, and check stderr logs for hook output.

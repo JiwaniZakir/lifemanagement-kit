@@ -1,0 +1,153 @@
+---
+title: Audit Log
+description: SHA-256 hash-chained tamper-evident audit log
+---
+
+# Audit Log
+
+Every significant action in the data-api is recorded in a SHA-256 hash-chained audit log. This creates a tamper-evident trail where any modification to historical entries is detectable.
+
+## How It Works
+
+The audit log implementation lives in `data-api/app/security/audit.py`.
+
+### Hash Chain
+
+Each audit entry contains:
+- `action` -- what happened (e.g., `credential_accessed`, `transaction_synced`)
+- `resource_type` -- what kind of resource was affected
+- `resource_id` -- which specific resource
+- `detail` -- human-readable description (limited to 500 characters)
+- `metadata` -- additional structured data (JSON)
+- `hash` -- SHA-256 hash of this entry's content plus the hash of the previous entry
+
+The chain works like this:
+
+```
+Entry 1: hash = SHA-256(content_1 + "genesis")
+Entry 2: hash = SHA-256(content_2 + hash_of_entry_1)
+Entry 3: hash = SHA-256(content_3 + hash_of_entry_2)
+...
+```
+
+If anyone modifies Entry 2 after the fact, the hash would no longer match what Entry 3 expects, breaking the chain.
+
+### Chain Verification
+
+The chain can be verified at any time via the API:
+
+```bash
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" http://localhost:8000/audit/verify
+```
+
+This endpoint:
+1. Reads all audit entries in order
+2. Recomputes each hash from the content and previous hash
+3. Compares against the stored hash
+4. Reports the first broken link if any
+
+A successful verification response confirms the entire chain is intact.
+
+## What Gets Logged
+
+### From the data-api (direct logging)
+
+Every API call that accesses or modifies data creates an audit entry:
+- Credential access (read, create, update, delete)
+- Financial data sync and queries
+- Calendar sync and queries
+- LMS sync and queries
+- Health data ingest and queries
+- Social media posting
+- Budget usage tracking
+
+### From OpenClaw (via audit-logger hook)
+
+The `audit-logger` hook POSTs to the audit endpoint on every agent event:
+- `command` -- user sends a command
+- `message:sent` -- agent sends an outbound message
+- `message:received` -- inbound message received
+
+The hook is fire-and-forget: the HTTP POST never delays the event pipeline. It silently drops events if the data-api is unreachable.
+
+### Audit Entry Structure
+
+```json
+{
+  "id": "uuid",
+  "action": "credential_accessed",
+  "resource_type": "credential",
+  "resource_id": "canvas_access_token",
+  "user_id": "default",
+  "detail": "Decrypted credential for Canvas LMS sync",
+  "metadata": {"source": "lms_sync"},
+  "hash": "a1b2c3d4...",
+  "previous_hash": "e5f6g7h8...",
+  "created_at": "2026-03-02T06:00:00Z"
+}
+```
+
+## API Endpoints
+
+### POST /audit/log
+
+Create a new audit entry. Used internally by the data-api and by the audit-logger hook.
+
+```bash
+curl -X POST -H "Authorization: Bearer $DATA_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:8000/audit/log \
+  -d '{
+    "action": "manual_check",
+    "resource_type": "system",
+    "detail": "Manual audit entry"
+  }'
+```
+
+### GET /audit/verify
+
+Verify the integrity of the entire audit chain.
+
+```bash
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" http://localhost:8000/audit/verify
+```
+
+Returns chain status, total entries, and the first broken link if any.
+
+## Properties
+
+| Property | Value |
+|----------|-------|
+| Hash algorithm | SHA-256 |
+| Chain type | Linear (each entry links to previous) |
+| Genesis entry | First entry hashes against the string `"genesis"` |
+| Storage | PostgreSQL table (`audit_log`) |
+| Immutability | Append-only; entries are never deleted or modified |
+| Verification | Full chain verification via `GET /audit/verify` |
+| Detail limit | 500 characters per entry |
+
+## Monitoring the Audit Log
+
+### Scheduled Verification
+
+The security audit cron job runs every Monday at 9 AM ET and verifies the audit chain as part of its checks. Any break triggers a critical alert delivered via WhatsApp.
+
+### Manual Verification
+
+```bash
+# From the host (dev mode with port bindings):
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" http://localhost:8000/audit/verify
+
+# From inside the Docker network:
+docker compose exec data-api curl -s -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://127.0.0.1:8000/audit/verify
+```
+
+### What a Broken Chain Means
+
+A broken chain indicates that one or more audit entries were modified after creation. This could mean:
+- Direct database manipulation (unauthorized access)
+- A bug in the audit logging code
+- Database corruption
+
+A broken chain should be investigated immediately. The verification endpoint reports the exact entry where the chain breaks.

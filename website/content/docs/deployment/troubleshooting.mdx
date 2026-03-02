@@ -1,0 +1,423 @@
+---
+title: Troubleshooting
+description: Common issues and solutions
+---
+
+# Troubleshooting
+
+Common issues and how to fix them. If your issue is not listed here, check the logs first:
+
+```bash
+# All services
+make logs
+
+# Specific service
+docker compose logs -f data-api
+docker compose logs -f openclaw-gateway
+docker compose logs -f postgres
+```
+
+---
+
+## Bootstrap Fails
+
+### Docker is not running
+
+```
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock
+```
+
+**Fix:** Start Docker.
+- macOS: Open Docker Desktop
+- Linux: `sudo systemctl start docker`
+
+### Port conflict
+
+```
+Bind for 127.0.0.1:5432 failed: port is already allocated
+```
+
+**Fix:** Another service is using that port. Either stop the conflicting service or edit `docker-compose.override.yml` to use a different port:
+
+```yaml
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5433:5432"  # Use 5433 instead
+```
+
+### Required secrets are empty
+
+```
+ERROR: DATA_API_TOKEN is empty in .env
+```
+
+**Fix:** The `.env` file exists but is missing values. Either delete `.env` and re-run bootstrap (it will regenerate secrets), or manually set the missing values:
+
+```bash
+# Regenerate a secret
+openssl rand -hex 32
+```
+
+### OpenClaw directory not found
+
+If bootstrap or deploy cannot find the OpenClaw source:
+
+```bash
+# The deploy script clones it automatically, but you can do it manually:
+git clone --depth 1 https://github.com/openclaw/openclaw.git openclaw
+```
+
+---
+
+## Data API is Unhealthy
+
+### Check the health endpoint
+
+```bash
+docker compose exec data-api curl -sf http://127.0.0.1:8000/health
+```
+
+### Database connection refused
+
+```
+sqlalchemy.exc.OperationalError: could not connect to server
+```
+
+**Fix:** PostgreSQL is not ready or the connection string is wrong.
+
+1. Check if PostgreSQL is running:
+   ```bash
+   docker compose ps postgres
+   docker compose exec postgres pg_isready -U aegis
+   ```
+
+2. Verify the `DATABASE_URL` in `docker-compose.yml` matches your `.env` credentials.
+
+3. If PostgreSQL keeps restarting, check its logs:
+   ```bash
+   docker compose logs postgres
+   ```
+
+### Migrations not run
+
+```
+sqlalchemy.exc.ProgrammingError: relation "credentials" does not exist
+```
+
+**Fix:** Run migrations:
+
+```bash
+docker compose exec -T data-api uv run alembic upgrade head
+```
+
+### Missing encryption key
+
+```
+ValueError: ENCRYPTION_MASTER_KEY must be set
+```
+
+**Fix:** Ensure `ENCRYPTION_MASTER_KEY` is set in `.env`. It should be a 64-character hex string. Generate one with `openssl rand -hex 32`.
+
+### Import errors in data-api
+
+```
+ModuleNotFoundError: No module named 'plaid'
+```
+
+**Fix:** Optional integration libraries are not installed by default. The data-api guards these with `try/except ImportError`. If you see this error in a code path that should have the library, rebuild the image:
+
+```bash
+docker compose build data-api
+docker compose up -d data-api
+```
+
+---
+
+## OpenClaw Gateway Will Not Start
+
+### Missing Anthropic API key
+
+```
+Error: ANTHROPIC_API_KEY is required
+```
+
+**Fix:** Add your Anthropic API key to `.env`:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-api03-...
+```
+
+Then restart:
+
+```bash
+docker compose restart openclaw-gateway
+```
+
+### Invalid openclaw.json
+
+If the gateway crashes on startup with a JSON parse error:
+
+1. Validate the config:
+   ```bash
+   python3 -c "import json; json.load(open('config/openclaw.json'))"
+   ```
+
+2. Common issues:
+   - Trailing commas in JSON (not allowed in strict JSON, but OpenClaw uses JSON5)
+   - Missing required fields
+   - Environment variable placeholders not resolved (e.g., `${DATA_API_TOKEN}` without the variable being set)
+
+### Gateway health check failing
+
+```bash
+# Check if the gateway is actually running
+docker compose logs openclaw-gateway --tail=50
+
+# Test the health endpoint
+docker compose exec openclaw-gateway node -e \
+  'require("http").get("http://localhost:18789/health",(r)=>{console.log(r.statusCode)}).on("error",(e)=>console.error(e.message))'
+```
+
+If the gateway is running but unhealthy, it may still be initializing. The start period is 30 seconds.
+
+---
+
+## WhatsApp Pairing Fails
+
+### QR code expired
+
+QR codes expire after about 30 seconds. If scanning fails:
+
+1. Open the Control UI at `http://localhost:18789`
+2. Wait for a new QR code to appear
+3. Scan immediately with your phone's WhatsApp (Linked Devices > Link a Device)
+
+### Session conflict
+
+If WhatsApp shows "This device is already linked" or the pairing keeps disconnecting:
+
+1. On your phone: WhatsApp Settings > Linked Devices > remove all linked devices
+2. Restart the gateway: `docker compose restart openclaw-gateway`
+3. Clear the OpenClaw data volume if the issue persists:
+   ```bash
+   docker compose down
+   docker volume rm aegis_openclaw_data  # Name may vary
+   docker compose up -d
+   ```
+4. Re-pair from the Control UI
+
+### Wrong phone number
+
+If messages are not being delivered, verify `WHATSAPP_ADMIN_PHONE` in `.env` matches the `allowFrom` and `defaultTo` values in `config/openclaw.json`. The format is digits only with country code (e.g., `15551234567`, not `+1-555-123-4567`).
+
+### WhatsApp blocked or rate-limited
+
+WhatsApp may temporarily block automated messaging if too many messages are sent in a short period. The Baileys library used by OpenClaw is unofficial. If your number gets flagged:
+
+1. Wait 24-48 hours before retrying
+2. Reduce message frequency in cron jobs
+3. Consider using WhatsApp Business API for a more stable solution
+
+---
+
+## Cron Jobs Not Firing
+
+### Check cron configuration
+
+```bash
+# Verify cron is enabled in openclaw.json
+python3 -c "import json; d=json.load(open('config/openclaw.json')); print('cron enabled:', d.get('cron',{}).get('enabled'))"
+
+# Check jobs.json is valid
+python3 -c "import json; d=json.load(open('config/cron/jobs.json')); print(f'{len(d[\"jobs\"])} jobs configured')"
+```
+
+### Check gateway logs for cron activity
+
+```bash
+docker compose logs openclaw-gateway | grep -i cron
+```
+
+### Jobs exist but do not execute
+
+Common causes:
+- The agent referenced in `agentId` does not exist in `openclaw.json`
+- The job is disabled (`"enabled": false`)
+- The schedule timezone does not match your expectation (check the `tz` field)
+- The gateway was recently restarted and the next execution has not arrived yet
+
+### Cron jobs execute but produce no output
+
+For silent sync jobs (delivery mode `"none"`), this is expected behavior. Check data freshness by querying the data-api:
+
+```bash
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://localhost:8000/finance/balances?user_id=default
+```
+
+---
+
+## Integration Auth Failures
+
+### Token expired
+
+Most OAuth tokens expire. Symptoms:
+- `401 Unauthorized` in data-api logs
+- Sync jobs report errors but no data updates
+
+**Fix:** Refresh the token. The process varies by integration:
+
+- **Google Calendar / Outlook:** The integration clients handle refresh automatically if the refresh token is valid. If the refresh token itself expired (Google: 7 days for unverified apps), you need to re-authorize.
+- **Canvas LMS:** Personal access tokens do not expire unless you regenerate them. Check your Canvas Settings page.
+- **Plaid:** Access tokens do not expire, but items can enter an error state. Check the Plaid dashboard.
+- **Garmin:** Re-enter your credentials if the unofficial API session expired.
+
+### Wrong credentials format
+
+Credentials stored via `POST /credentials` must match what the integration client expects. Check the integration's source code in `data-api/app/integrations/` for the expected `service_name` keys.
+
+Common credential names:
+- `canvas_access_token`
+- `google_refresh_token`
+- `outlook_refresh_token`
+- `plaid_access_token_<item_id>`
+
+### Testing an integration
+
+```bash
+# Check if a credential exists
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://localhost:8000/credentials/default/canvas_access_token
+
+# Trigger a sync manually
+curl -s -X POST -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://localhost:8000/lms/sync?user_id=default
+```
+
+---
+
+## Budget Exceeded
+
+### Check current spend
+
+```bash
+curl -s -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://localhost:8000/budget/usage | python3 -m json.tool
+```
+
+### Increase limits
+
+Edit `.env`:
+
+```bash
+LLM_DAILY_BUDGET_USD=10.00    # Default: 5.00
+LLM_MONTHLY_BUDGET_USD=100.00 # Default: 50.00
+```
+
+Restart the gateway (it reads these values):
+
+```bash
+docker compose restart openclaw-gateway
+```
+
+### Reduce costs
+
+- Switch agents from `claude-sonnet-4-6` to `claude-haiku-4-5` in `config/openclaw.json` (5-10x cheaper)
+- Reduce cron frequency (e.g., sync every hour instead of every 15 minutes)
+- Disable content generation if not needed (`"enabled": false` in `config/cron/jobs.json`)
+
+---
+
+## Backup and Restore Issues
+
+### `age` not installed
+
+```
+age not installed -- backup stored unencrypted
+```
+
+This is a warning, not an error. The backup still works, it is just not encrypted. To install `age`:
+
+```bash
+# macOS
+brew install age
+
+# Ubuntu/Debian
+sudo apt install age
+
+# From source
+go install filippo.io/age/cmd/...@latest
+```
+
+### Restore fails
+
+If `psql` reports errors during restore, ensure:
+
+1. The database exists: `docker compose exec postgres psql -U aegis -c '\l'`
+2. You are restoring to the correct database
+3. The backup file is not corrupted (check file size is non-zero)
+
+For a clean restore (replaces all data):
+
+```bash
+# Drop and recreate the database
+docker compose exec -T postgres psql -U aegis -c "DROP DATABASE aegis; CREATE DATABASE aegis;"
+
+# Restore
+gunzip -c backups/aegis_TIMESTAMP.sql.gz | docker compose exec -T postgres psql -U aegis aegis
+
+# Re-run migrations (in case the backup predates schema changes)
+docker compose exec -T data-api uv run alembic upgrade head
+```
+
+---
+
+## General Debugging
+
+### View all running containers and their status
+
+```bash
+docker compose ps
+```
+
+### Enter a container shell
+
+```bash
+# Data API
+docker compose exec data-api bash
+
+# PostgreSQL
+docker compose exec postgres psql -U aegis
+
+# OpenClaw gateway
+docker compose exec openclaw-gateway sh
+```
+
+### Check resource usage
+
+```bash
+docker stats --no-stream
+```
+
+### Reset everything (development only)
+
+```bash
+# Stop services and remove all data volumes
+make clean
+
+# This runs: docker compose down -v && rm -rf data-api/.venv
+# Then re-bootstrap:
+./infrastructure/scripts/bootstrap.sh
+```
+
+### Check OpenAPI documentation
+
+When the data-api is running with dev port bindings:
+
+```
+http://localhost:8000/docs     # Swagger UI
+http://localhost:8000/redoc    # ReDoc
+```
+
+These endpoints list all available API routes with request/response schemas.

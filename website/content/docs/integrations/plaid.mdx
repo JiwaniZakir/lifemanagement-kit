@@ -1,0 +1,84 @@
+---
+title: Plaid Banking
+description: Connect bank accounts via Plaid for transactions, balances, and spending analysis
+---
+
+# Plaid Banking
+
+Connect bank accounts via [Plaid](https://plaid.com/) Link. Aegis syncs transactions, detects recurring charges, identifies subscriptions, and tracks spending by category.
+
+## Feasibility
+
+Fully supported. Plaid Link handles token exchange. Sandbox environment available for testing.
+
+## Setup
+
+### 1. Create a Plaid Account
+
+1. Sign up at [dashboard.plaid.com](https://dashboard.plaid.com/)
+2. Create an application
+3. Note your **Client ID** and **Secret**
+
+### 2. Configure Environment Variables
+
+Add to your `.env` file:
+
+```bash
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=your_secret
+PLAID_ENVIRONMENT=sandbox    # sandbox | development | production
+```
+
+### 3. Link a Bank Account
+
+Aegis uses Plaid Link for secure bank account connection. The flow is:
+
+1. Create a link token via `POST /finance/link/create`
+2. Use the link token in a Plaid Link session (web or mobile)
+3. Exchange the public token via `POST /finance/link/exchange`
+4. The access token is encrypted and stored in the credential store
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/finance/link/create` | POST | Create a Plaid Link token |
+| `/finance/link/exchange` | POST | Exchange public token for access token |
+| `/finance/balances` | GET | Retrieve current account balances |
+| `/finance/transactions` | GET | Query transactions by date, category, merchant |
+| `/finance/recurring` | GET | Detect recurring transactions |
+| `/finance/subscriptions` | GET | Identify subscription charges |
+| `/finance/snapshot` | GET | Financial overview snapshot |
+| `/finance/sync` | POST | Trigger transaction sync (cursor-based) |
+
+## Integration Client
+
+The Plaid client lives at `data-api/app/integrations/plaid_client.py` and handles:
+
+- Server-side Plaid SDK calls
+- Cursor-based transaction sync (incremental updates)
+- Balance retrieval with account grouping
+- Recurring charge detection via merchant grouping and interval analysis
+- Encrypted access token storage via the credential store
+
+## Skill: aegis-finance
+
+The `aegis-finance` skill teaches agents to query Plaid data. It handles:
+
+- Spending analysis by category and merchant
+- Affordability checks ("Can I afford this $200 purchase?")
+- Anomaly detection (unusual spending patterns)
+- Budget recommendations
+- Card/account number masking (shows only last 4 digits)
+
+## Cron Schedule
+
+| Job | Schedule | Agent | Description |
+|-----|----------|-------|-------------|
+| Financial sync | Every 6 hours | `sync` | Pulls transactions + balances from Plaid |
+
+## Notes
+
+- Plaid access tokens do not expire, but items can enter an error state. Monitor the Plaid dashboard for item health.
+- Sandbox mode provides test credentials for development without connecting real accounts.
+- Transaction amounts and dates are stored in plaintext (needed for SQL aggregation). Account identifiers and access tokens are encrypted with AES-256-GCM.

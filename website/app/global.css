@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@theme {
+  --color-aegis-bg: #0a0a0f;
+  --color-aegis-surface: #111118;
+  --color-aegis-border: #1e1e2e;
+  --color-aegis-muted: #6b6b8d;
+  --color-aegis-text: #e4e4ed;
+  --color-aegis-accent: #7c6aef;
+  --color-aegis-accent-dim: #5a4dbf;
+  --color-aegis-glow: #8b7cf7;
+
+  --font-manrope: 'Manrope', sans-serif;
+}
+
+/* Landing page dark overrides */
+.landing-dark {
+  --fd-background: var(--color-aegis-bg);
+}
+
+/* Gradient orb animation */
+@keyframes orb-float {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0.6;
+  }
+}
+
+@keyframes orb-rotate {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+
+.gradient-orb {
+  animation: orb-float 8s ease-in-out infinite, orb-rotate 20s linear infinite;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(124, 106, 239, 0.15);
+}
+
+/* Streaming text cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.streaming-cursor::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+  color: var(--color-aegis-accent);
+  margin-left: 2px;
+}

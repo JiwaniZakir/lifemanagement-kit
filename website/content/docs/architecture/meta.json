@@ -1,0 +1,4 @@
+{
+  "title": "Architecture",
+  "pages": ["overview", "agents", "skills", "hooks", "cron-jobs"]
+}

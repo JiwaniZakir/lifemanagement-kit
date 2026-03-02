@@ -1,0 +1,180 @@
+---
+title: Adding Skills
+description: How to create new OpenClaw skills
+---
+
+# Adding Skills
+
+Skills are Markdown files that teach OpenClaw agents how to interact with data-api endpoints. They do not contain code -- they contain instructions. The LLM does the reasoning; skills just teach it how to query data.
+
+## Directory Structure
+
+```
+skills/
+  aegis-my-skill/
+    SKILL.md
+```
+
+Each skill lives in its own directory inside `skills/`. The directory name is conventionally prefixed with `aegis-` for Aegis skills.
+
+## SKILL.md Format
+
+```markdown
+---
+name: my_skill_name
+description: "One-line description of what the skill does"
+---
+# Skill Title
+
+When to use this skill. What questions or tasks it covers.
+
+## API Reference
+
+Base URL: `http://data-api:8000`
+
+### GET /endpoint
+
+Description of what this endpoint returns.
+
+\```
+web_fetch("http://data-api:8000/endpoint?param=value", {
+  "headers": {"Authorization": "Bearer $DATA_API_TOKEN"}
+})
+\```
+
+Returns: `{"field": "value"}`
+
+## Guidelines
+
+- How to format responses
+- What NOT to do (e.g., never expose raw account numbers)
+```
+
+The YAML frontmatter (`name` and `description`) is required. OpenClaw auto-discovers skills from the `skills/` directory at startup.
+
+## Key Principles
+
+- **Show exact `web_fetch` calls.** Agents need full URL, headers, and body.
+- **Include response shapes.** Agents need to know what fields come back.
+- **Write guidelines, not code.** Tell the agent how to interpret and present data.
+- **Set boundaries.** What data is sensitive? What should never appear in messages?
+- **Keep it under 64KB.** Aegis sets `maxSkillFileBytes: 65536`.
+
+## Skill Loading Priority (3 tiers)
+
+OpenClaw loads skills in a 3-tier priority order:
+
+1. **Workspace skills** -- your custom skills in the `skills/` directory (highest priority)
+2. **Managed skills** -- installed via OpenClaw's skill management commands
+3. **Bundled skills** -- 53+ skills that ship with OpenClaw (web search, file management, code execution, memory, etc.)
+
+If a workspace skill has the same name as a bundled skill, the workspace version takes precedence. Aegis's 8 custom skills (`aegis-finance`, `aegis-calendar`, etc.) are all workspace skills.
+
+## Skill Limits
+
+Skills are configured in `config/openclaw.json`:
+
+```json5
+{
+  skills: {
+    load: {
+      extraDirs: ["../skills"],
+      watch: true,
+    },
+    limits: {
+      maxSkillsInPrompt: 12,
+      maxSkillFileBytes: 65536,   // 64 KB per skill file
+    },
+  },
+}
+```
+
+- Maximum 12 skills loaded per prompt (16,000 char limit)
+- Maximum 65,536 bytes per skill file
+- With `watch: true`, skills reload automatically when modified
+
+## Testing Skills
+
+With `watch: true` in the configuration, the skill loads automatically when you save it. Otherwise, restart the gateway:
+
+```bash
+docker compose restart openclaw-gateway
+```
+
+Ask your agent a question that should trigger the skill to verify it works.
+
+You can also list loaded skills:
+
+```bash
+openclaw skills list
+```
+
+## Aegis Skill Inventory
+
+Aegis ships with 8 custom skills:
+
+| Skill | Purpose |
+|-------|---------|
+| `aegis-finance` | Banking + investments queries, affordability checks, portfolio monitoring |
+| `aegis-calendar` | Today's events, multi-day lookups, free slot detection |
+| `aegis-lms` | Assignments, grades, deadlines with priority levels |
+| `aegis-health` | Health metrics, goals tracking, macro breakdown |
+| `aegis-social` | Cross-platform posting (LinkedIn + X), engagement tracking |
+| `aegis-content` | Content generation with topic rotation, tone control, draft management |
+| `aegis-briefing` | Morning briefing + weekly digest assembly from all data sources |
+| `aegis-security` | PII redaction rules, audit chain verification, budget monitoring |
+
+## Example: Creating a Weather Skill
+
+Here is a complete example of creating a new skill from scratch:
+
+```bash
+mkdir -p skills/aegis-weather
+```
+
+Create `skills/aegis-weather/SKILL.md`:
+
+```markdown
+---
+name: aegis_weather
+description: "Get current weather and forecasts"
+---
+# Aegis Weather
+
+Activate when the user asks about weather, temperature, or forecasts.
+
+## When to Use
+
+- "What's the weather today?"
+- "Will it rain tomorrow?"
+- "Temperature this week?"
+
+## API Reference
+
+Base URL: `http://data-api:8000`
+
+### GET /weather/current
+
+Get current weather for the user's location.
+
+\```
+web_fetch("http://data-api:8000/weather/current?user_id=default", {
+  "headers": {"Authorization": "Bearer $DATA_API_TOKEN"}
+})
+\```
+
+Returns: `{"temp_f": 72, "condition": "Partly Cloudy", "humidity": 45}`
+
+## Guidelines
+
+- Always include temperature in both Fahrenheit and Celsius
+- Include relevant clothing suggestions for extreme weather
+- Never include location data in responses (privacy)
+
+## Error Handling
+
+- `401` -- token missing or invalid, ask user to check configuration
+- `503` -- weather service unavailable, inform user and suggest retrying later
+```
+
+The skill will be auto-discovered by OpenClaw on the next restart or immediately if `watch: true` is enabled.

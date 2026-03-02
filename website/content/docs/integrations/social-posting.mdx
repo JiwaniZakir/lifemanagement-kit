@@ -1,0 +1,121 @@
+---
+title: Social Posting
+description: Publish content to LinkedIn and X with AI-generated drafts and approval workflow
+---
+
+# Social Posting
+
+Publish thought-leadership content to [LinkedIn](https://www.linkedin.com/) and [X / Twitter](https://x.com/) with AI-generated drafts, topic rotation, and an approval workflow.
+
+## LinkedIn
+
+### Feasibility
+
+Very limited. The official LinkedIn API only allows posting with an approved app that has the `w_member_social` scope. Approval requires a company page and a review process.
+
+### Setup
+
+```bash
+LINKEDIN_ACCESS_TOKEN=your_access_token
+```
+
+### Notes
+
+- Requires an approved LinkedIn developer app with `w_member_social` scope
+- Sign up at [developer.linkedin.com](https://developer.linkedin.com/)
+- Access tokens expire and must be refreshed manually or via OAuth flow
+
+## X / Twitter
+
+### Feasibility
+
+Supported with paid tier. X API v2 provides read and write access. The Basic tier costs $100/month.
+
+### Setup
+
+```bash
+X_API_KEY=your_api_key
+X_API_SECRET=your_api_secret
+X_ACCESS_TOKEN=your_access_token
+X_ACCESS_SECRET=your_access_secret
+```
+
+### Notes
+
+- Requires X API v2 keys from [developer.x.com](https://developer.x.com/)
+- Basic tier ($100/month) required for read + write access
+- Free tier is read-only with limited rate limits
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/social/post` | POST | Publish a post to LinkedIn or X |
+| `/social/history` | GET | View post history |
+| `/social/engagement` | GET | Engagement metrics for published posts |
+| `/social/x/me` | GET | X account profile information |
+| `/social/x/search` | GET | Search tweets |
+
+## Integration Clients
+
+Two clients handle social posting:
+
+- **LinkedIn client** (`data-api/app/integrations/linkedin_client.py`) -- post publishing via LinkedIn API with OAuth token management
+- **X client** (`data-api/app/integrations/x_client.py`) -- post publishing, search, and profile via X API v2
+
+## Content Generation
+
+The content pipeline uses two skills:
+
+### aegis-social
+
+Handles cross-platform posting with platform-native formatting:
+
+| Platform | Format |
+|----------|--------|
+| LinkedIn | 500-2000 chars, professional tone, 3-5 hashtags |
+| X | 280 chars max, punchy tone, 1-3 hashtags |
+
+Key rules:
+- Never cross-posts identical text -- rewrites for each platform
+- 5 posts per hour rate limit
+- All posts go through the approval workflow before publishing
+
+### aegis-content
+
+Handles content generation with:
+
+- **Topic rotation** for auto mode: AI/SWE, productivity, building in public, tech leadership, startup culture, data-driven decisions, dev tools
+- **Three tones**: professional, casual, thought_leader
+- **Draft management**: generate, review, edit, approve, publish
+- **Never auto-publishes** -- always requires user approval via WhatsApp
+
+## Content Workflow
+
+1. The content cron job (7 AM daily) generates a draft using the `content` agent
+2. The draft is sent to WhatsApp for review
+3. The user can approve, edit, or reject
+4. On approval, the post is published to the target platform(s)
+
+## Content Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/content/generate` | POST | Generate a new content draft |
+| `/content/drafts` | GET | List pending drafts |
+| `/content/queue` | GET | View the publishing queue |
+| `/content/publish` | POST | Publish an approved draft |
+| `/content/ingest` | POST | Ingest research material for content generation |
+
+## Cron Schedule
+
+| Job | Schedule | Agent | Description |
+|-----|----------|-------|-------------|
+| Content drafts | 7:00 AM ET daily | `content` | Generates LinkedIn/X post for approval |
+
+## Notes
+
+- Social posting is fully optional. Disable the content cron job by setting `"enabled": false` in `config/cron/jobs.json` if you do not want automated content generation.
+- LinkedIn API access is the hardest credential to obtain -- it requires an approved developer app.
+- X API v2 Basic tier is a recurring cost ($100/month). Consider whether the posting frequency justifies the expense.
+- All social media tokens are encrypted at rest via AES-256-GCM in the credential store.

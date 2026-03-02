@@ -1,0 +1,242 @@
+---
+title: Adding Integrations
+description: How to add new data integrations
+---
+
+# Adding Integrations
+
+Integration clients live in `data-api/app/integrations/` and inherit from `BaseIntegration`. This guide walks through adding a new integration end-to-end: client, model, migration, API router, skill, and tests.
+
+## The BaseIntegration Pattern
+
+All integrations follow a common abstract base class:
+
+```python
+class BaseIntegration(ABC):
+    def __init__(self, user_id: str, db: AsyncSession):
+        self.user_id = user_id
+        self.db = db
+
+    async def get_credential(self, key: str) -> str:
+        """Fetch and decrypt a stored credential. Audit-logged."""
+
+    @abstractmethod
+    async def sync(self) -> dict[str, Any]: ...
+
+    @abstractmethod
+    async def health_check(self) -> bool: ...
+```
+
+## Step 1: Create the Client
+
+Create `data-api/app/integrations/my_service_client.py`:
+
+```python
+"""MyService integration client."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import httpx
+import structlog
+
+from app.integrations.base import BaseIntegration
+
+logger = structlog.get_logger()
+
+# Guard optional dependencies
+try:
+    import my_optional_lib  # noqa: F401
+    MY_SERVICE_AVAILABLE = True
+except ImportError:
+    MY_SERVICE_AVAILABLE = False
+
+
+class MyServiceClient(BaseIntegration):
+    """Sync data from MyService API."""
+
+    BASE_URL = "https://api.myservice.com/v1"
+
+    async def sync(self) -> dict[str, Any]:
+        """Pull latest data from MyService."""
+        if not MY_SERVICE_AVAILABLE:
+            self._log.warning("my_service_unavailable", reason="library not installed")
+            return {"synced": 0}
+
+        token = await self.get_credential("my_service_api_token")
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            try:
+                resp = await client.get(
+                    f"{self.BASE_URL}/data",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+            except httpx.HTTPStatusError as exc:
+                self._log.error(
+                    "my_service_sync_failed",
+                    status=exc.response.status_code,
+                )
+                return {"synced": 0, "error": str(exc)}
+
+        await self._audit(
+            action="my_service_synced",
+            resource_type="my_service_data",
+            detail=f"Synced {len(data)} items",
+        )
+
+        return {"synced": len(data)}
+
+    async def health_check(self) -> bool:
+        """Verify MyService credentials are valid."""
+        try:
+            token = await self.get_credential("my_service_api_token")
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    f"{self.BASE_URL}/health",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                return resp.status_code == 200
+        except Exception:
+            return False
+```
+
+### Key patterns
+
+- Import `from __future__ import annotations` at the top
+- Guard optional libraries with `try/except ImportError`
+- Use `httpx.AsyncClient` (never `requests`)
+- Catch specific exceptions (never bare `except Exception` in production paths)
+- Audit log all data access
+- Never log credentials or tokens
+
+## Step 2: Create a Model (if needed)
+
+Create `data-api/app/models/my_data.py`:
+
+```python
+"""MyService data model."""
+
+from __future__ import annotations
+
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, TimestampMixin, UUIDMixin
+
+
+class MyData(UUIDMixin, TimestampMixin, Base):
+    __tablename__ = "my_data"
+
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    external_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+```
+
+Key conventions:
+- Use `Mapped[]` type annotations (SQLAlchemy 2.0 style)
+- `user_id` is `String(36)`, not a UUID foreign key (single-user system, no users table)
+- Inherit from `UUIDMixin` and `TimestampMixin` for consistent ID and timestamp fields
+
+## Step 3: Create a Database Migration
+
+```bash
+cd data-api
+uv run alembic revision --autogenerate -m "add my_data table"
+
+# Review the generated migration file in alembic/versions/
+# Then apply:
+uv run alembic upgrade head
+```
+
+Never write raw SQL DDL. Always use Alembic migrations.
+
+## Step 4: Create an API Router
+
+Create `data-api/app/api/my_service.py`:
+
+```python
+"""MyService API router."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import get_db
+from app.integrations.my_service_client import MyServiceClient
+
+router = APIRouter(prefix="/my-service", tags=["my-service"])
+
+
+@router.post("/sync")
+async def sync_my_service(
+    user_id: str = Query(default="default"),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Trigger a MyService data sync."""
+    client = MyServiceClient(user_id=user_id, db=db)
+    return await client.sync()
+```
+
+Register the router in `data-api/app/main.py`:
+
+```python
+from app.api.my_service import router as my_service_router
+
+app.include_router(my_service_router, dependencies=[Depends(verify_token)])
+```
+
+## Step 5: Create a Skill
+
+Create `skills/aegis-my-service/SKILL.md`:
+
+```markdown
+---
+name: aegis_my_service
+description: "Query MyService data via the data-api"
+---
+# Aegis MyService
+
+Instructions for the agent on when and how to query MyService data.
+
+## API Reference
+
+Base URL: `http://data-api:8000`
+
+### POST /my-service/sync
+
+Trigger a data sync.
+
+\```
+web_fetch("http://data-api:8000/my-service/sync?user_id=default", {
+  "method": "POST",
+  "headers": {"Authorization": "Bearer $DATA_API_TOKEN"}
+})
+\```
+```
+
+## Step 6: Write Tests
+
+Add tests in `data-api/tests/`. Test both the endpoint registration and the client logic. Use mocks for external API calls.
+
+Add the new router's routes to `tests/test_api_endpoints.py` in the `_PROTECTED_ROUTES` list to verify they require authentication.
+
+## Existing Integrations
+
+Aegis ships with 10 integration clients for reference:
+
+| Client | File | Purpose |
+|--------|------|---------|
+| Plaid | `plaid_client.py` | Bank accounts, transactions, balances |
+| Schwab | `schwab_client.py` | Investment portfolios, positions, trades |
+| Canvas | `canvas_client.py` | Courses, assignments, grades |
+| Blackboard | `blackboard_client.py` | Courses, assignments, grades |
+| Google Calendar | `google_calendar_client.py` | Events, free/busy |
+| Outlook Calendar | `outlook_calendar_client.py` | Events, free/busy |
+| Garmin | `garmin_client.py` | Steps, heart rate, sleep, calories |
+| LinkedIn | `linkedin_client.py` | Post publishing |
+| X / Twitter | `x_client.py` | Post publishing, search |
+| Base | `base.py` | Abstract base class (all clients inherit) |

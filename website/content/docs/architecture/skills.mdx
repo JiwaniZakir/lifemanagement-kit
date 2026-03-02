@@ -1,0 +1,336 @@
+---
+title: Skills
+description: The 8 custom OpenClaw skills that teach Aegis agents how to query financial data, calendars, coursework, health metrics, social media, content generation, briefings, and security monitoring.
+---
+
+Skills are SKILL.md files with YAML frontmatter that teach agents how to call data-api endpoints via `web_fetch`. They are NOT code -- they are instructions that the LLM reads and follows. OpenClaw auto-discovers skills at startup and watches for file changes.
+
+---
+
+## Skill Loading (3-Tier System)
+
+OpenClaw loads skills from three tiers, in priority order:
+
+1. **Workspace skills** -- Custom skills in your workspace (`skills/` in Aegis). These take highest priority.
+2. **Managed skills** -- Installed via OpenClaw package management.
+3. **Bundled skills** -- 53+ skills that ship with OpenClaw out of the box (web search, file management, memory, etc.).
+
+Aegis adds 8 workspace-level skills on top of the bundled ones. Skill files are capped at 65 KB; max 12 skills loaded per prompt (16,000 char limit).
+
+---
+
+## Skill Overview
+
+| Skill | Directory | What it teaches |
+|-------|-----------|----------------|
+| Finance | `skills/aegis-finance/` | Banking queries, spending analysis, portfolio tracking |
+| Calendar | `skills/aegis-calendar/` | Event queries, conflict detection, free slot finding |
+| LMS | `skills/aegis-lms/` | Assignment tracking, grade monitoring, deadline alerts |
+| Health | `skills/aegis-health/` | Health metrics, goal tracking, wellness recommendations |
+| Social | `skills/aegis-social/` | LinkedIn and X posting, engagement tracking |
+| Content | `skills/aegis-content/` | Content generation strategy and publishing |
+| Briefing | `skills/aegis-briefing/` | Morning briefing and weekly digest composition |
+| Security | `skills/aegis-security/` | Audit log verification, budget monitoring |
+
+---
+
+## aegis-finance
+
+Banking + investments. Queries balances, transactions, recurring charges, subscriptions. Runs affordability checks ("Can I afford this $200 purchase?"). Monitors Schwab portfolio positions.
+
+**Key behaviors:**
+- Masks all card/account numbers -- shows only last 4 digits
+- Spending analysis by category and time period
+- Subscription detection from recurring charge patterns
+- Two-step trade execution: preview then confirm with approval token
+
+**Endpoints:**
+- `/finance/balances` -- account balances across all linked banks
+- `/finance/transactions` -- transaction history with filters
+- `/finance/recurring` -- recurring charge detection
+- `/finance/subscriptions` -- subscription identification
+- `/finance/snapshot` -- financial overview
+- `/finance/link/create` -- Plaid Link token for new bank connections
+- `/finance/link/exchange` -- exchange Plaid public token
+- `/finance/portfolio` -- investment portfolio overview
+- `/finance/schwab/portfolio` -- Schwab-specific portfolio
+- `/finance/schwab/trade/preview` -- preview a trade
+- `/finance/schwab/trade/confirm` -- confirm a previewed trade
+- `/finance/sync` -- trigger financial data sync
+
+**Credentials:** `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` (Plaid). `SCHWAB_APP_KEY`, `SCHWAB_APP_SECRET` (Schwab).
+
+---
+
+## aegis-calendar
+
+Google Calendar + Outlook sync. Shows today's events sorted by start time. Detects free slots (30+ minute gaps). Warns about back-to-back meetings (< 15 min gap).
+
+**Key behaviors:**
+- Uses 12-hour format with relative time ("in 45 minutes", "tomorrow morning")
+- Multi-day lookups for upcoming week
+- Free slot detection with configurable minimum duration
+- Back-to-back meeting warnings
+
+**Endpoints:**
+- `/calendar/today` -- today's events sorted by start time
+- `/calendar/events` -- events for a date range
+- `/calendar/free` -- free time slots
+- `/calendar/sync` -- trigger calendar sync
+
+**Credentials:** Google: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Outlook: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`.
+
+---
+
+## aegis-lms
+
+Canvas + Blackboard coursework. Tracks assignments with priority levels based on urgency. Always mentions overdue work first, even when not asked.
+
+**Priority levels:**
+- **Overdue** -- past due date
+- **Critical** -- due within 24 hours
+- **High** -- due within 48 hours
+- **Medium** -- due within 7 days
+- **Low** -- due in more than 7 days
+
+**Key behaviors:**
+- Urgency-based prioritization (overdue items always shown first)
+- Grade comparison against course averages
+- Announcement tracking for course updates
+- Cross-platform support (Canvas + Blackboard)
+
+**Endpoints:**
+- `/lms/courses` -- enrolled courses
+- `/lms/due` -- upcoming and overdue assignments
+- `/lms/grades` -- grades with course averages
+- `/lms/announcements` -- course announcements
+- `/lms/sync` -- trigger LMS data sync
+
+**Credentials:** Canvas: `CANVAS_API_URL` (token stored encrypted via `POST /credentials`). Blackboard: `BLACKBOARD_URL`, `BLACKBOARD_USERNAME`, `BLACKBOARD_PASSWORD`.
+
+---
+
+## aegis-health
+
+Garmin + Apple Health metrics. Always shows actuals vs goals with progress percentages. Provides time-of-day context for meal planning.
+
+**Key behaviors:**
+- Always shows actuals vs goals: "112g / 175g protein (64%) -- 63g more needed"
+- Suggests high-protein foods when behind on protein goals
+- Time-of-day context: morning = plan lunch; afternoon = estimate dinner needs; evening = summarize day
+- Never provides medical advice
+- Tracks steps, heart rate, sleep, calories, protein, and more
+
+**Endpoints:**
+- `/health/today` -- today's health metrics
+- `/health/summary` -- health overview with goal progress
+- `/health/trends` -- multi-day trends and averages
+- `/health/goals` -- goal tracking status
+- `/health/macros` -- macronutrient breakdown
+- `/health/weekly` -- weekly health summary
+- `/health/ingest` -- ingest health data (Apple Health via iOS Shortcuts)
+- `/health/sync` -- trigger health data sync
+
+**Credentials:** Garmin: `GARMIN_EMAIL`, `GARMIN_PASSWORD` (unofficial library). Apple Health: no credentials -- push via iOS Shortcuts to `POST /health/ingest`.
+
+---
+
+## aegis-social
+
+LinkedIn + X posting with platform-native formatting. Never cross-posts identical text -- rewrites for each platform.
+
+**Platform guidelines:**
+- **LinkedIn:** 500-2000 characters, professional tone, 3-5 hashtags
+- **X (Twitter):** 280 characters max, punchy tone, 1-3 hashtags
+
+**Key behaviors:**
+- Platform-native formatting and tone
+- Never cross-posts identical text
+- 5 posts/hour rate limit
+- Engagement tracking and post history
+
+**Endpoints:**
+- `/social/post` -- publish to LinkedIn or X
+- `/social/history` -- post history
+- `/social/engagement` -- engagement metrics
+- `/social/x/me` -- X profile information
+- `/social/x/search` -- search tweets
+
+**Credentials:** LinkedIn: `LINKEDIN_ACCESS_TOKEN` (requires approved API app). X: `X_API_KEY`, `X_API_SECRET`, `X_ACCESS_TOKEN`, `X_ACCESS_TOKEN_SECRET`, `X_BEARER_TOKEN` (Basic tier $100/mo).
+
+---
+
+## aegis-content
+
+Content generation engine with topic rotation, tone control, and approval workflow. Depends on `aegis-social` for publishing.
+
+**Topic rotation for auto mode:**
+- AI/SWE
+- Productivity
+- Building in public
+- Tech leadership
+- Startup culture
+- Data-driven decisions
+- Dev tools
+
+**Three tones:**
+- `professional` -- formal, thought-leadership style
+- `casual` -- conversational, relatable
+- `thought_leader` -- opinionated, forward-looking
+
+**Key behaviors:**
+- Never auto-publishes -- requires user approval
+- Topic rotation to maintain variety
+- Research-backed content via web_search
+- Draft management with edit/approve/reject workflow
+
+**Endpoints:**
+- `/content/generate` -- generate a new content draft
+- `/content/drafts` -- list pending drafts
+- `/content/queue` -- content publishing queue
+- `/content/publish` -- publish an approved draft
+- `/content/ingest` -- ingest research material
+
+**Credentials:** None beyond what `aegis-social` requires.
+
+---
+
+## aegis-briefing
+
+Morning briefing and weekly digest assembly from all data sources. WhatsApp-compatible formatting (< 2000 chars per message).
+
+### Morning Briefing (6 AM daily)
+
+Format:
+1. Greeting with day/date
+2. Today's schedule (sorted by time)
+3. Urgent deadlines (overdue + due within 24h)
+4. Financial snapshot (recent spending, balance)
+5. Health check (yesterday's metrics vs goals)
+6. Top 3 action items for the day
+
+### Weekly Digest (Sunday 8 PM)
+
+Format:
+1. Schedule recap (meetings attended, free time)
+2. Academic progress (assignments completed, grades)
+3. Financial summary (spending by category, trends)
+4. Health trends (averages vs goals)
+5. Next week preview (upcoming deadlines, events)
+
+**Endpoints:**
+- `/briefing/today` -- today's briefing data
+- `/briefing/weekly` -- weekly digest data
+- `/briefing/insights` -- cross-domain insights
+
+**Credentials:** None beyond the data sources you want included.
+
+---
+
+## aegis-security
+
+Always active across all agents. Mandatory redactions and monitoring rules that apply to every agent interaction.
+
+**Mandatory redactions:**
+- SSN -> `[SSN REDACTED]`
+- Card numbers -> `[CARD REDACTED]`
+- Account numbers -> `****1234` (preserves last 4)
+
+**Monitoring:**
+- Brute force detection (5+ failures in 15 min)
+- Hash-chain break detection = critical security alert
+- Budget threshold monitoring
+
+**Budget thresholds:**
+- **OK** (< 80%) -- normal operation
+- **Warning** (80-95%) -- suggests reducing non-essential calls
+- **Critical** (95-100%) -- urgent warning
+- **Exceeded** (> 100%) -- blocks agent messages
+
+**Endpoints:**
+- `/audit/log` -- audit event logging
+- `/audit/verify` -- audit chain integrity verification
+- `/budget/usage` -- LLM budget status
+
+**Credentials:** None (uses `DATA_API_TOKEN`).
+
+---
+
+## Creating Your Own Skills
+
+### Step 1: Create the Directory and SKILL.md
+
+```bash
+mkdir -p skills/my-skill
+```
+
+Create `SKILL.md` inside it:
+
+````markdown
+---
+name: my_skill
+description: "One-line description of what this skill does"
+---
+# My Skill
+
+What this skill does in 1-2 sentences.
+
+## When to Use
+
+Activate when the user asks about: [trigger phrases and topics].
+
+## API Reference
+
+Base URL: `http://data-api:8000` -- All endpoints require `Authorization: Bearer $DATA_API_TOKEN`.
+
+### GET /my-endpoint
+
+```
+web_fetch("http://data-api:8000/my-endpoint?param=value", {
+  "headers": {"Authorization": "Bearer $DATA_API_TOKEN"}
+})
+```
+
+Returns: `{"key": "value", "count": 42}`
+
+## Guidelines
+
+- How to format responses
+- Safety rules (what never to include)
+
+## Error Handling
+
+- `401` -- token missing or invalid
+- `500` -- retry after a moment
+````
+
+### Step 2: Key Principles
+
+- **Show exact `web_fetch` calls.** Agents need full URL, headers, and body.
+- **Include response shapes.** Agents need to know what fields come back.
+- **Write guidelines, not code.** Tell the agent how to interpret and present data.
+- **Set boundaries.** What data is sensitive? What should never appear in messages?
+- **Keep it under 64KB.** Aegis sets `maxSkillFileBytes: 65536`.
+
+### Step 3: Test
+
+With `watch: true` in the skills config, the skill loads automatically. Otherwise restart the gateway. Ask your agent a question that should trigger the skill.
+
+### Skill Configuration
+
+Skills are configured in `config/openclaw.json`:
+
+```json5
+{
+  skills: {
+    load: {
+      extraDirs: ["../skills"],
+      watch: true,
+    },
+    limits: {
+      maxSkillsInPrompt: 12,
+      maxSkillFileBytes: 65536,
+    },
+  },
+}
+```

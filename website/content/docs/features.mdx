@@ -1,0 +1,203 @@
+---
+title: Feature Map
+description: Complete feature inventory and architecture mapping
+---
+
+# Feature Map
+
+Every feature from the Aegis codebase, mapped to its home in the OpenClaw architecture.
+
+**Legend**: `data-api` = custom Python endpoint | `skill` = OpenClaw SKILL.md | `hook` = OpenClaw hook | `openclaw` = native OpenClaw feature | `deleted` = not carried forward
+
+---
+
+## 1. Finance
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Plaid Link token creation | `data-api /finance/link` | Server-side SDK, encrypted token storage |
+| Plaid public token exchange | `data-api /finance/link` | Encrypted access token storage |
+| Transaction sync (cursor-based) | `data-api /finance/sync` | Plaid Transactions Sync API |
+| Balance retrieval | `data-api /finance/balances` | Updates stored account balances |
+| Recurring transaction detection | `data-api /finance/recurring` | Merchant grouping + interval analysis |
+| Transaction queries (date, category, merchant) | `data-api /finance/transactions` | SQL queries with filters |
+| Schwab OAuth flow | `data-api /finance/schwab/auth` | State validation, token exchange |
+| Schwab portfolio positions | `data-api /finance/schwab/portfolio` | Account balances, positions |
+| Schwab trade preview + confirmation | `data-api /finance/schwab/trade` | Two-step confirmation pattern |
+| Spending analysis | `skill aegis-finance` | LLM does the reasoning |
+| Portfolio daily brief | `skill aegis-finance` | LLM composes from raw data |
+| Anomaly detection | `skill aegis-finance` | LLM identifies anomalies |
+| Budget recommendations | `skill aegis-finance` | LLM generates advice |
+
+## 2. Calendar
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Google Calendar OAuth token management | `data-api /calendar/sync` | Refresh token rotation |
+| Event fetching (date range) | `data-api /calendar/events` | Google Calendar API v3 |
+| Today's events | `data-api /calendar/today` | Convenience endpoint |
+| Outlook/Graph events | `data-api /calendar/sync` | Azure AD OAuth |
+| Conflict detection | `skill aegis-calendar` | LLM identifies conflicts |
+| Free slot finder | `skill aegis-calendar` | LLM computes availability |
+
+## 3. LMS (Academic)
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Canvas course listing | `data-api /lms/courses` | Personal access token auth |
+| Canvas assignment fetch + storage | `data-api /lms/sync` | Upsert by external_id |
+| Canvas grades | `data-api /lms/grades` | Per-course submissions |
+| Canvas announcements | `data-api /lms/announcements` | Per-course |
+| Blackboard sync | `data-api /lms/sync` | REST API + playwright fallback |
+| Pearson scraping | `data-api /lms/sync` | Playwright browser automation |
+| Upcoming assignments query | `data-api /lms/due` | SQL query by due_date |
+| Assignment tracking | `skill aegis-lms` | LLM prioritizes deadlines |
+| Overdue detection | `skill aegis-lms` | LLM flags overdue |
+
+## 4. Health and Fitness
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Garmin Connect auth | `data-api /health/sync` | Unofficial garminconnect lib |
+| Garmin stats/steps/HR/sleep/activities | `data-api /health/sync` | Multi-metric pull |
+| Health metric storage | `data-api /health/ingest` | Also for iOS Shortcuts POST |
+| Health metric queries | `data-api /health/today`, `/health/summary` | SQL aggregation |
+| Goal tracking (protein, calories) | `skill aegis-health` | LLM checks progress vs targets |
+| Wellness recommendations | `skill aegis-health` | LLM generates advice |
+| Apple Health ingestion | `data-api /health/ingest` | iOS Shortcuts to API |
+
+## 5. Social Media and Content
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| LinkedIn posting (official API) | `data-api /social/post` | OAuth token management |
+| X/Twitter posting (API v2) | `data-api /social/post` | tweepy, paid tier |
+| LinkedIn feed scraping | `deleted` | ToS risk, OpenClaw web_search replaces |
+| X feed reading | `deleted` | OpenClaw web_search replaces |
+| News aggregation | `deleted` | OpenClaw web_search replaces |
+| Post generation (RAG) | `skill aegis-content` | LLM + web_search replaces RAG |
+| Engagement analytics | `skill aegis-content` | LLM analyzes via API data |
+| Multi-platform scheduling | `skill aegis-content` | Cron-driven via OpenClaw |
+
+## 6. Email
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Gmail sync | `openclaw` | Native Gmail hook preset |
+| Email priority scoring | `deleted` | LLM does this natively |
+| Action extraction | `deleted` | LLM does this natively |
+| Thread summarization | `deleted` | LLM does this natively |
+
+## 7. Contacts
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Contact graph (NetworkX) | `deleted` | Not high-value; LLM can reason about contacts |
+| Engagement scoring | `deleted` | |
+| Outreach suggestions | `deleted` | |
+
+## 8. Productivity
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Screen time analysis | `deleted` | Low-priority; revisit later |
+| Focus session tracking | `deleted` | |
+| App usage reporting | `deleted` | |
+
+## 9. WhatsApp
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| WhatsApp message send/receive | `openclaw` | Native Baileys channel |
+| Message sync | `deleted` | OpenClaw handles natively |
+| WhatsApp bridge sidecar | `deleted` | Replaced by OpenClaw native |
+
+## 10. Voice
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| STT (Whisper/Deepgram) | `deleted` | OpenClaw voice channel handles |
+| Voice Q&A | `deleted` | OpenClaw interactive agent |
+| Session history | `deleted` | OpenClaw memory handles |
+
+## 11. Meeting Transcription
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Whisper transcription | `deleted` | Revisit as OpenClaw plugin |
+| Meeting summarization | `deleted` | |
+| Action item extraction | `deleted` | |
+
+## 12. Briefing and Insights
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Morning briefing aggregation | `skill aegis-briefing` | Agent queries all endpoints |
+| Weekly digest | `skill aegis-briefing` | Agent queries all endpoints |
+| Cross-domain insights | `skill aegis-briefing` | LLM synthesizes across data |
+
+## 13. Security and Audit
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| AES-256-GCM field encryption | `data-api /security/encryption.py` | Transplant unchanged |
+| Hash-chained audit log | `data-api /security/audit.py` + `hook audit-logger` | Dual: DB + hook |
+| Audit chain verification | `data-api /audit/verify` | Endpoint |
+| PII redaction (regex) | `hook pii-guard` | Port Python to TypeScript |
+| LLM budget tracking | `hook budget-guard` | Port Python to TypeScript |
+| JWT auth + TOTP 2FA | `deleted` | Not needed; M2M Bearer token only |
+| Rate limiting (Redis) | `deleted` | Not needed; single caller |
+| Dual-factor lockout | `deleted` | Not needed; no user login |
+| Token blocklist | `deleted` | Not needed; no JWT |
+| SSRF protection | `deleted` | No web crawling in data-api |
+| Credential CRUD | `data-api /credentials/*` | Encrypted storage |
+
+## 14. Frontend -- Web Console
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Dashboard | `openclaw` | OpenClaw Control UI at :18789 |
+| Finance page | `openclaw` | Agent queries data-api |
+| Security page | `openclaw` | Agent queries audit endpoint |
+| All other pages | `openclaw` | Control UI replaces all |
+| Login / auth | `openclaw` | Built-in auth |
+
+## 15. Frontend -- Mobile App
+
+| Feature | New Home | Notes |
+|---------|----------|-------|
+| Voice interface | `openclaw` | WhatsApp voice messages |
+| Dashboard | `deleted` | WhatsApp is the interface |
+| Health data | `deleted` | iOS Shortcuts to data-api |
+| Login | `deleted` | Not needed |
+
+---
+
+## Summary: What Stays Custom
+
+| Component | Endpoints | Why |
+|-----------|-----------|-----|
+| Credential CRUD | 3 | AES-256-GCM encrypted storage in Postgres |
+| Finance (Plaid + Schwab) | 8 | Server-side SDK, OAuth flows, encrypted tokens |
+| Calendar (Google + Outlook) | 4 | OAuth refresh token management |
+| LMS (Canvas + Blackboard + Pearson) | 5 | Authenticated API calls, browser automation |
+| Health (Garmin + iOS ingest) | 4 | Unofficial lib, iOS Shortcuts endpoint |
+| Social posting (LinkedIn + X) | 2 | Token management, API posting |
+| Audit log | 2 | Hash-chain verification, query |
+| Encryption + audit (security) | -- | Transplanted from backend/ |
+
+**Total: ~28 endpoints across 7 routers + 6 integration clients + 6 models**
+
+## What Was Deleted (replaced by OpenClaw native features)
+
+- All 13 service files (business logic moved to agent skills)
+- 10 of 16 integration clients (replaced by OpenClaw tools/channels)
+- JWT auth, rate limiting, monitoring, token blocklist
+- Redis, Qdrant, MinIO, Traefik (infrastructure services)
+- Next.js console (replaced by OpenClaw Control UI)
+- React Native mobile app (replaced by WhatsApp channel)
+- WhatsApp bridge sidecar (replaced by OpenClaw native Baileys)
+- Gmail integration (replaced by OpenClaw Gmail hook)
+- News aggregation (replaced by OpenClaw web_search)
+- Voice service (replaced by OpenClaw voice channel)
+- Contact graph, productivity tracking, meeting transcription

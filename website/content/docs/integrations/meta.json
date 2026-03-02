@@ -1,0 +1,4 @@
+{
+  "title": "Integrations",
+  "pages": ["plaid", "schwab", "canvas", "google-calendar", "garmin", "social-posting"]
+}

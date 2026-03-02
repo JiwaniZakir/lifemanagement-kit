@@ -1,0 +1,98 @@
+---
+title: Garmin Health
+description: Steps, heart rate, sleep, calories, and activity tracking from Garmin Connect
+---
+
+# Garmin Health
+
+Steps, heart rate, sleep stages, calories, and activity tracking from [Garmin Connect](https://connect.garmin.com/) via the unofficial `garminconnect` library.
+
+## Feasibility
+
+Unofficial. The `garminconnect` Python library uses Garmin's web API, which is not an official developer API. It can break with Garmin updates. However, it provides comprehensive read access to all health metrics.
+
+## Setup
+
+### 1. Configure Garmin Credentials
+
+Add your Garmin Connect credentials to `.env`:
+
+```bash
+GARMIN_EMAIL=your@email.com
+GARMIN_PASSWORD=your_password
+```
+
+### 2. Verify Connection
+
+Trigger a health sync to confirm the credentials work:
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $DATA_API_TOKEN" \
+  http://localhost:8000/health/sync?user_id=default
+```
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health/today` | GET | Today's health metrics (steps, HR, sleep, calories) |
+| `/health/summary` | GET | Health summary with aggregations |
+| `/health/trends` | GET | Multi-day trend data |
+| `/health/goals` | GET | Progress against health goals |
+| `/health/macros` | GET | Macro nutrient breakdown |
+| `/health/weekly` | GET | Weekly health summary |
+| `/health/sync` | POST | Trigger Garmin data sync |
+| `/health/ingest` | POST | Manual data ingestion (also for Apple Health) |
+
+## Integration Client
+
+The Garmin client lives at `data-api/app/integrations/garmin_client.py` and handles:
+
+- Authentication via the `garminconnect` library
+- Multi-metric data pull (steps, heart rate, sleep stages, calories, activities)
+- Health metric storage in PostgreSQL
+- Session management (re-authentication when sessions expire)
+
+## Apple Health Support
+
+Apple Health data can be ingested via iOS Shortcuts that POST to the `/health/ingest` endpoint:
+
+```bash
+# iOS Shortcut → POST to:
+http://your-server:8000/health/ingest
+
+# Body:
+{
+  "user_id": "default",
+  "metric_type": "steps",
+  "value": 8432,
+  "source": "apple_health"
+}
+```
+
+No credentials are required for Apple Health -- the data flows via iOS Shortcuts to the API.
+
+## Skill: aegis-health
+
+The `aegis-health` skill teaches agents to present health data with context:
+
+- Always shows actuals vs goals: "112g / 175g protein (64%) -- 63g more needed"
+- Suggests high-protein foods when behind on goals
+- Time-of-day context:
+  - Morning: plan lunch
+  - Afternoon: estimate dinner needs
+  - Evening: summarize the day
+- Never provides medical advice
+
+## Cron Schedule
+
+| Job | Schedule | Agent | Description |
+|-----|----------|-------|-------------|
+| Health sync | Every hour | `sync` | Pulls metrics from Garmin Connect |
+
+## Notes
+
+- The `garminconnect` library is guarded with `try/except ImportError`. If not installed, the integration gracefully degrades with a `MY_SERVICE_AVAILABLE = False` flag.
+- Garmin sessions can expire. If the sync starts failing with authentication errors, the client will attempt to re-authenticate. If that fails, you may need to re-enter credentials.
+- Raw health metrics are encrypted at rest with AES-256-GCM.
+- Because this uses an unofficial API, it can break with Garmin updates. Monitor sync job logs for errors.

@@ -1,0 +1,91 @@
+---
+title: Google Calendar
+description: Sync events and find free time slots via Google Calendar API v3
+---
+
+# Google Calendar
+
+Sync events and find free time slots from [Google Calendar](https://calendar.google.com/). Requires a Google Cloud project with Calendar API v3 enabled.
+
+## Feasibility
+
+Fully supported. Google Calendar API v3 with OAuth 2.0. Provides full event read access and free/busy queries.
+
+## Setup
+
+### 1. Create a Google Cloud Project
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com/)
+2. Create a new project
+3. Enable the **Google Calendar API**
+4. Go to **Credentials > Create Credentials > OAuth 2.0 Client ID**
+5. Set application type to **Web application**
+6. Add `https://127.0.0.1/callback` as an authorized redirect URI
+7. Note your **Client ID** and **Client Secret**
+
+### 2. Configure Environment Variables
+
+Add to your `.env` file:
+
+```bash
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+GOOGLE_REDIRECT_URI=https://127.0.0.1/callback
+```
+
+### 3. Authorize via OAuth
+
+The integration handles the OAuth 2.0 flow. The refresh token is encrypted and stored in the credential store for automatic token refresh.
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/calendar/today` | GET | Today's events sorted by start time |
+| `/calendar/events` | GET | Events for a date range |
+| `/calendar/free` | GET | Free time slots (30+ minute gaps) |
+| `/calendar/sync` | POST | Trigger calendar event sync |
+
+## Integration Client
+
+The Google Calendar client lives at `data-api/app/integrations/google_calendar_client.py` and handles:
+
+- OAuth 2.0 token management with automatic refresh
+- Event fetching via Google Calendar API v3
+- Date range queries
+- Encrypted refresh token storage
+
+## Skill: aegis-calendar
+
+The `aegis-calendar` skill teaches agents to present calendar data effectively:
+
+- Events sorted by start time with 12-hour format
+- Relative time indicators ("in 45 minutes", "tomorrow morning")
+- Free slot detection (gaps of 30+ minutes)
+- Back-to-back meeting warnings (less than 15 minute gap)
+- Conflict detection between overlapping events
+
+## Outlook Calendar Support
+
+Aegis also supports Outlook Calendar via Microsoft Graph API using a separate client (`outlook_calendar_client.py`). The same `/calendar/*` endpoints handle both platforms.
+
+```bash
+AZURE_CLIENT_ID=your_client_id
+AZURE_CLIENT_SECRET=your_client_secret
+AZURE_TENANT_ID=your_tenant_id
+```
+
+Outlook requires an Azure AD app registration at [portal.azure.com](https://portal.azure.com/).
+
+## Cron Schedule
+
+| Job | Schedule | Agent | Description |
+|-----|----------|-------|-------------|
+| Calendar sync | Every 15 minutes | `sync` | Syncs events from Google Calendar + Outlook |
+
+## Notes
+
+- The integration clients handle OAuth refresh automatically if the refresh token is valid.
+- For unverified Google Cloud apps, refresh tokens expire after 7 days. To avoid this, submit your app for verification or re-authorize periodically.
+- Calendar event data (titles, times, locations) is stored in plaintext for query purposes. OAuth tokens are encrypted with AES-256-GCM.
+- The calendar sync runs every 15 minutes, making it one of the most frequent sync jobs, to ensure schedule data stays current.

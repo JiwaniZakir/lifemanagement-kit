@@ -1,0 +1,99 @@
+---
+title: Canvas LMS
+description: Track assignments, grades, and course announcements from Canvas LMS
+---
+
+# Canvas LMS
+
+Track assignments, grades, and course announcements from [Canvas LMS](https://www.instructure.com/canvas). Uses personal access tokens for authentication.
+
+## Feasibility
+
+Fully supported. Canvas provides a comprehensive REST API with personal access token authentication. No OAuth app approval required.
+
+## Setup
+
+### 1. Generate a Canvas Personal Access Token
+
+1. Log in to your Canvas instance
+2. Go to **Account > Settings**
+3. Scroll to **Approved Integrations**
+4. Click **+ New Access Token**
+5. Set a purpose (e.g., "Aegis") and optionally an expiry date
+6. Copy the token
+
+### 2. Store the Token via Encrypted Credential Store
+
+Canvas tokens are stored via the encrypted credential store rather than environment variables:
+
+```bash
+curl -X POST http://localhost:8000/credentials \
+  -H "Authorization: Bearer $DATA_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"default","service_name":"canvas_access_token","value":"YOUR_TOKEN"}'
+```
+
+### 3. Configure the Canvas API URL
+
+Add to your `.env` file:
+
+```bash
+CANVAS_API_URL=https://your-institution.instructure.com
+```
+
+## Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/lms/courses` | GET | List enrolled courses |
+| `/lms/due` | GET | Upcoming assignments sorted by due date |
+| `/lms/grades` | GET | Grades per course |
+| `/lms/announcements` | GET | Course announcements |
+| `/lms/sync` | POST | Trigger full assignment and grade sync |
+
+## Integration Client
+
+The Canvas client lives at `data-api/app/integrations/canvas_client.py` and handles:
+
+- Course listing via Canvas REST API
+- Assignment fetching with upsert by `external_id`
+- Grade retrieval per course (submissions)
+- Announcement fetching per course
+- Personal access token authentication (stored encrypted, not in environment variables)
+
+## Skill: aegis-lms
+
+The `aegis-lms` skill teaches agents how to query Canvas data with urgency-based prioritization:
+
+| Priority | Criteria |
+|----------|----------|
+| Overdue | Past due date |
+| Critical | Due within 24 hours |
+| High | Due within 48 hours |
+| Medium | Due within 7 days |
+| Low | Due beyond 7 days |
+
+The agent always mentions overdue work first, even when not asked. It compares recent grades to course averages for context.
+
+## Cron Schedule
+
+| Job | Schedule | Agent | Description |
+|-----|----------|-------|-------------|
+| LMS sync | Every 30 minutes | `sync` | Fetches assignments + grades from Canvas |
+
+## Blackboard Support
+
+Aegis also supports Blackboard Learn via a separate client (`blackboard_client.py`). The same `/lms/*` endpoints handle both platforms.
+
+```bash
+BLACKBOARD_URL=https://your-institution.blackboard.com
+BLACKBOARD_USERNAME=your_username
+BLACKBOARD_PASSWORD=your_password
+```
+
+## Notes
+
+- Canvas personal access tokens do not expire unless you explicitly regenerate them.
+- The token is stored encrypted via AES-256-GCM in the credential store, not in `.env`.
+- Assignment data (titles, due dates) is stored in plaintext for query purposes. The Canvas token itself is encrypted.
+- The LMS sync cron job runs every 30 minutes to keep assignment data fresh during the academic term.

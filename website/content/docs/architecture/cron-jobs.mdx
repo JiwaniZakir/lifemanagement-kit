@@ -1,0 +1,284 @@
+---
+title: Cron Jobs
+description: The 8 scheduled automation jobs that power Aegis -- financial sync, calendar sync, LMS sync, health sync, morning briefings, content generation, weekly digests, and security audits.
+---
+
+Cron jobs run agent tasks on a schedule. They are defined in `config/cron/jobs.json` and executed by the OpenClaw gateway. All cron runs use isolated sessions with 120-300 second timeouts.
+
+---
+
+## Cron Schedule Overview
+
+| Task | Cron Expression | Schedule | Agent | Delivery |
+|:--|:--|:--|:--|:--|
+| Financial sync | `0 */6 * * *` | Every 6 hours | `sync` | Silent |
+| Calendar sync | `*/15 * * * *` | Every 15 minutes | `sync` | Silent |
+| LMS sync | `*/30 * * * *` | Every 30 minutes | `sync` | Silent |
+| Health sync | `0 * * * *` | Every hour | `sync` | Silent |
+| Morning briefing | `0 6 * * *` | 6:00 AM ET daily | `briefing` | WhatsApp |
+| Content drafts | `0 7 * * *` | 7:00 AM ET daily | `content` | WhatsApp |
+| Weekly digest | `0 20 * * 0` | Sunday 8:00 PM ET | `briefing` | WhatsApp |
+| Security audit | `0 9 * * 1` | Monday 9:00 AM ET | `briefing` | WhatsApp |
+
+All schedules use standard cron expressions. Sync jobs run silently (only report errors); briefing and content jobs announce to WhatsApp.
+
+---
+
+## Data Sync Jobs
+
+### sync-finance
+
+- **Schedule:** Every 6 hours (`0 */6 * * *`)
+- **Agent:** `sync` (Claude Haiku 4.5)
+- **Delivery:** Silent (none)
+- **What it does:** Pulls bank transactions and balances from Plaid and investment portfolio data from Schwab
+- **Dependencies:** `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV` for banking. `SCHWAB_APP_KEY`, `SCHWAB_APP_SECRET` for investments.
+
+The sync agent calls `web_fetch` to hit the data-api's `/finance/sync` endpoint, which triggers the Plaid and Schwab integration clients to pull fresh data. Results are encrypted and stored in PostgreSQL.
+
+### sync-calendar
+
+- **Schedule:** Every 15 minutes (`*/15 * * * *`)
+- **Agent:** `sync` (Claude Haiku 4.5)
+- **Delivery:** Silent (none)
+- **What it does:** Syncs events from Google Calendar and Outlook Calendar
+- **Dependencies:** Google: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`. Outlook: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`.
+
+Frequent syncing ensures the agent always has up-to-date schedule information for questions like "Am I free at 3 PM?" and for the morning briefing.
+
+### sync-lms
+
+- **Schedule:** Every 30 minutes (`*/30 * * * *`)
+- **Agent:** `sync` (Claude Haiku 4.5)
+- **Delivery:** Silent (none)
+- **What it does:** Fetches assignments, grades, and announcements from Canvas LMS and Blackboard
+- **Dependencies:** Canvas: `CANVAS_API_URL` + encrypted token. Blackboard: `BLACKBOARD_URL`, `BLACKBOARD_USERNAME`, `BLACKBOARD_PASSWORD`.
+
+Pulls the latest assignment deadlines and grade updates so the agent can warn about upcoming due dates and track academic progress.
+
+### sync-health
+
+- **Schedule:** Every hour (`0 * * * *`)
+- **Agent:** `sync` (Claude Haiku 4.5)
+- **Delivery:** Silent (none)
+- **What it does:** Pulls health metrics from Garmin Connect (steps, heart rate, sleep, calories)
+- **Dependencies:** `GARMIN_EMAIL`, `GARMIN_PASSWORD`
+
+Note: Apple Health data is not pulled by this job. It is pushed to the data-api via iOS Shortcuts to `POST /health/ingest`.
+
+---
+
+## User-Facing Jobs
+
+### morning-briefing
+
+- **Schedule:** Daily at 6:00 AM ET (`0 6 * * *`)
+- **Agent:** `briefing` (Claude Haiku 4.5)
+- **Delivery:** WhatsApp (announce)
+- **What it does:** Generates and delivers a daily briefing summarizing your day
+
+The briefing agent queries multiple data-api endpoints to assemble:
+1. Greeting with day and date
+2. Today's schedule (sorted by time)
+3. Urgent deadlines (overdue + due within 24 hours)
+4. Financial snapshot (recent spending, account balances)
+5. Health check (yesterday's metrics vs goals)
+6. Top 3 action items for the day
+
+The briefing is formatted for WhatsApp (< 2000 characters per message) and delivered as an announcement.
+
+### generate-content
+
+- **Schedule:** Daily at 7:00 AM ET (`0 7 * * *`)
+- **Agent:** `content` (Claude Sonnet 4.6)
+- **Delivery:** WhatsApp (announce)
+- **What it does:** Generates LinkedIn and X post drafts and sends them to WhatsApp for approval
+
+The content agent:
+1. Uses `web_search` to research trending topics in tech
+2. Generates platform-native content (LinkedIn: 500-2000 chars; X: 280 chars max)
+3. Applies topic rotation (AI/SWE, productivity, building in public, tech leadership, startup culture, data-driven decisions, dev tools)
+4. Sends drafts to WhatsApp for your review
+5. Never auto-publishes -- waits for explicit approval
+
+### weekly-digest
+
+- **Schedule:** Sunday at 8:00 PM ET (`0 20 * * 0`)
+- **Agent:** `briefing` (Claude Haiku 4.5)
+- **Delivery:** WhatsApp (announce)
+- **What it does:** Generates a weekly summary with trends and recommendations
+
+The weekly digest includes:
+1. Schedule recap (meetings attended, free time analysis)
+2. Academic progress (assignments completed, grade changes)
+3. Financial summary (spending by category, week-over-week trends)
+4. Health trends (averages vs goals, improvement areas)
+5. Next week preview (upcoming deadlines, scheduled events)
+
+### security-audit
+
+- **Schedule:** Monday at 9:00 AM ET (`0 9 * * 1`)
+- **Agent:** `briefing` (Claude Haiku 4.5)
+- **Delivery:** WhatsApp (announce)
+- **What it does:** Verifies audit log integrity and reports LLM budget status
+
+The security audit:
+1. Calls `/audit/verify` to check the SHA-256 hash chain integrity
+2. Reports any chain breaks (indicates tampering)
+3. Calls `/budget/usage` to check daily and monthly LLM spend
+4. Reports budget threshold status (OK, Warning, Critical, Exceeded)
+5. Checks for suspicious patterns (brute force attempts, unusual activity)
+
+---
+
+## Job Configuration Format
+
+Each job in `config/cron/jobs.json` follows this structure:
+
+```json
+{
+  "jobId": "sync-finance",
+  "enabled": true,
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 */6 * * *",
+    "tz": "America/New_York"
+  },
+  "agentId": "sync",
+  "sessionTarget": "isolated",
+  "delivery": {
+    "mode": "none"
+  },
+  "payload": {
+    "message": "Sync financial data from all connected accounts..."
+  },
+  "timeout": 120
+}
+```
+
+### Key fields
+
+| Field | Description |
+|-------|-------------|
+| `jobId` | Unique identifier for the job |
+| `enabled` | `true` or `false` -- set to `false` to disable |
+| `schedule.kind` | Always `"cron"` |
+| `schedule.expr` | Standard cron expression (use [crontab.guru](https://crontab.guru/) to build) |
+| `schedule.tz` | Timezone for the schedule (e.g., `"America/New_York"`) |
+| `agentId` | Which agent runs the task (`sync`, `briefing`, or `content`) |
+| `sessionTarget` | Always `"isolated"` for cron jobs (separate session per run) |
+| `delivery.mode` | `"none"` (silent) or `"announce"` (sends to WhatsApp) |
+| `payload.message` | The instructions given to the agent |
+| `timeout` | Maximum execution time in seconds (120-300) |
+
+---
+
+## Customizing Cron Jobs
+
+### Disable a job
+
+Set `"enabled": false` in `config/cron/jobs.json`:
+
+```json
+{
+  "jobId": "sync-lms",
+  "enabled": false
+}
+```
+
+### Change a schedule
+
+Edit the `schedule.expr` field. Examples:
+
+| Desired schedule | Cron expression |
+|-----------------|-----------------|
+| Every 30 minutes | `*/30 * * * *` |
+| Every 2 hours | `0 */2 * * *` |
+| Daily at 7 AM | `0 7 * * *` |
+| Weekdays at 8 AM | `0 8 * * 1-5` |
+| Every Sunday at 9 PM | `0 21 * * 0` |
+
+### Change the timezone
+
+Edit the `schedule.tz` field:
+
+```json
+{
+  "schedule": {
+    "kind": "cron",
+    "expr": "0 7 * * *",
+    "tz": "America/Los_Angeles"
+  }
+}
+```
+
+### Change which agent runs a job
+
+Edit the `agentId` field. Only use agents that have the required tools:
+- `sync` -- has `web_fetch` only (good for data sync)
+- `briefing` -- has `web_fetch` only (good for summaries)
+- `content` -- has `web_fetch` + `web_search` (good for research-based tasks)
+- `main` -- has all tools (use sparingly for cron -- it is the most expensive)
+
+### Change delivery mode
+
+- `"none"` -- job runs silently, only errors are logged
+- `"announce"` -- job sends its output to WhatsApp
+
+```json
+{
+  "delivery": {
+    "mode": "announce"
+  }
+}
+```
+
+---
+
+## Cron Configuration in openclaw.json
+
+The cron system itself is configured in `config/openclaw.json`:
+
+```json5
+{
+  cron: {
+    enabled: true,
+    store: "./cron/jobs.json",
+    maxConcurrentRuns: 3,
+    sessionRetention: "3d",
+  },
+}
+```
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `enabled` | `true` | Enable/disable the entire cron system |
+| `store` | `"./cron/jobs.json"` | Path to the jobs definition file |
+| `maxConcurrentRuns` | `3` | Maximum simultaneous cron jobs |
+| `sessionRetention` | `"3d"` | How long to keep cron session logs |
+
+---
+
+## Monitoring Cron Jobs
+
+### Check cron execution in logs
+
+```bash
+docker compose logs openclaw-gateway | grep cron
+```
+
+### Verify a specific job ran
+
+```bash
+docker compose logs openclaw-gateway | grep "sync-finance"
+```
+
+### Common cron issues
+
+| Symptom | Likely cause | Fix |
+|---------|-------------|-----|
+| Jobs not firing | `cron.enabled` is `false` | Set to `true` in `openclaw.json` |
+| Specific job not running | Job has `"enabled": false` | Set to `true` in `jobs.json` |
+| Job runs but produces no output | Delivery mode is `"none"` | Change to `"announce"` if you want WhatsApp messages |
+| Job times out | Complex task exceeds timeout | Increase `timeout` value (max 300s) |
+| Wrong timezone | `schedule.tz` mismatch | Verify timezone string (e.g., `"America/New_York"`) |

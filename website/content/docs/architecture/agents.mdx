@@ -1,0 +1,235 @@
+---
+title: Agents
+description: The 4 AI agents that power Aegis -- main (interactive assistant), sync (background data sync), briefing (daily summaries), and content (social media generation) -- with their models, tools, channels, and configuration.
+---
+
+Aegis runs 4 AI agents, each with a specific role, model assignment, and set of tool permissions. Agents are defined in `config/openclaw.json` and powered by Anthropic's Claude models.
+
+---
+
+## Agent Overview
+
+| Agent | Model | Tools | Purpose | Delivery |
+|:--|:--|:--|:--|:--|
+| `main` | claude-sonnet-4-6 (haiku fallback) | web_fetch, web_search, memory_search | Interactive WhatsApp assistant | WhatsApp |
+| `sync` | claude-haiku-4-5 | web_fetch | Silent background data synchronization | None (silent) |
+| `briefing` | claude-haiku-4-5 | web_fetch | Morning briefing + weekly digest delivery | WhatsApp |
+| `content` | claude-sonnet-4-6 (haiku fallback) | web_fetch, web_search | LinkedIn + X content generation | WhatsApp |
+
+---
+
+## Main Agent
+
+- **ID:** `main`
+- **Model:** Claude Sonnet 4.6 (with Haiku 4.5 fallback)
+- **Purpose:** Interactive assistant -- responds to your WhatsApp messages
+- **Tools:** `web_fetch`, `web_search`, `memory_search`
+- **Channel:** WhatsApp
+- **When it runs:** When you send a message
+
+This is the agent you talk to. It has access to all 8 skills and can query any data-api endpoint. It uses the more capable (and more expensive) Sonnet model for better reasoning on complex questions like financial analysis, schedule optimization, and content review.
+
+Example interactions:
+- "What did I spend on food this month?"
+- "What assignments are due this week?"
+- "How are my health goals looking?"
+- "Check my portfolio"
+- "Am I free tomorrow at 3 PM?"
+
+---
+
+## Sync Agent
+
+- **ID:** `sync`
+- **Model:** Claude Haiku 4.5
+- **Purpose:** Background data synchronization
+- **Tools:** `web_fetch` only
+- **Channel:** None (silent)
+- **When it runs:** On cron schedule (every 6h for finance, every 15m for calendar, etc.)
+
+This agent pulls data from external services via the data-api. It runs silently in isolated sessions and only reports errors. It uses the cheaper Haiku model because sync tasks are straightforward -- call an endpoint, confirm success, move on.
+
+Cron jobs assigned to this agent:
+- `sync-finance` -- every 6 hours
+- `sync-calendar` -- every 15 minutes
+- `sync-lms` -- every 30 minutes
+- `sync-health` -- every hour
+
+---
+
+## Briefing Agent
+
+- **ID:** `briefing`
+- **Model:** Claude Haiku 4.5
+- **Purpose:** Morning briefings, weekly digests, security audits
+- **Tools:** `web_fetch` only
+- **Channel:** WhatsApp (announces results)
+- **When it runs:** Daily at 6 AM, Sunday at 8 PM, Monday at 9 AM
+
+This agent aggregates data from multiple sources and composes summaries delivered to WhatsApp. Despite using the cheaper Haiku model, it produces well-structured briefings because the aegis-briefing skill provides detailed formatting instructions.
+
+Cron jobs assigned to this agent:
+- `morning-briefing` -- daily at 6:00 AM ET
+- `weekly-digest` -- Sunday at 8:00 PM ET
+- `security-audit` -- Monday at 9:00 AM ET
+
+### Morning Briefing Format
+
+The morning briefing includes:
+1. Greeting with day/date
+2. Today's schedule (sorted by time)
+3. Urgent deadlines (overdue + due within 24h)
+4. Financial snapshot (recent spending, balance)
+5. Health check (yesterday's metrics vs goals)
+6. Top 3 action items for the day
+
+### Weekly Digest Format
+
+The weekly digest includes:
+1. Schedule recap (meetings attended, free time)
+2. Academic progress (assignments completed, grades)
+3. Financial summary (spending by category, trends)
+4. Health trends (averages vs goals)
+5. Next week preview (upcoming deadlines, events)
+
+---
+
+## Content Agent
+
+- **ID:** `content`
+- **Model:** Claude Sonnet 4.6 (with Haiku 4.5 fallback)
+- **Purpose:** Generate LinkedIn and X thought-leadership posts
+- **Tools:** `web_fetch`, `web_search`
+- **Channel:** WhatsApp (announces drafts for approval)
+- **When it runs:** Daily at 7 AM
+
+This agent uses web search to find trending topics in tech, generates posts tailored to each platform, and sends drafts to WhatsApp for your review before publishing. It uses Sonnet because content generation requires creative reasoning and platform-specific tone adaptation.
+
+Key behaviors:
+- Uses `web_search` to research trending topics
+- Generates platform-native content (LinkedIn: 500-2000 chars; X: 280 chars max)
+- Never cross-posts identical text -- rewrites for each platform
+- Never auto-publishes -- always sends drafts for approval first
+- Topic rotation: AI/SWE, productivity, building in public, tech leadership, startup culture, data-driven decisions, dev tools
+
+Cron jobs assigned to this agent:
+- `generate-content` -- daily at 7:00 AM ET
+
+---
+
+## Global Agent Defaults
+
+All agents inherit these defaults from `config/openclaw.json`:
+
+```json5
+{
+  agents: {
+    defaults: {
+      timezone: "America/New_York",
+      timeFormat: "12h",
+      timeout: 120,
+      thinkingDefault: "low",
+      compaction: {
+        mode: "safeguard",
+        reservedTokens: 4096,
+        memoryFlush: { enabled: true },
+      },
+    },
+  },
+}
+```
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| `timezone` | `America/New_York` | Used for cron scheduling and time display |
+| `timeFormat` | `12h` | 12-hour format with AM/PM |
+| `timeout` | `120` | 120-second timeout per agent turn |
+| `thinkingDefault` | `low` | Low-level thinking mode (options: off, minimal, low, medium, high, xhigh) |
+| `compaction.mode` | `safeguard` | Prevents context window overflow |
+| `compaction.memoryFlush` | `{ enabled: true }` | Must be an object, not a boolean |
+
+**Important:** `thinkingDefault` is only valid at the `defaults` level, not per-agent.
+
+---
+
+## Workspace Bootstrap Files
+
+When OpenClaw starts (or when an agent session begins), it injects context from workspace files. These files live in `config/` for Aegis:
+
+| File | Purpose |
+|------|---------|
+| `BOOT.md` | Startup orientation -- runs on every gateway restart. Tells the agent who it is and what to do. |
+| `USER.md` | User profile and preferences (your name, timezone, goals) |
+| `MEMORY.md` | Long-term curated memory that persists across sessions |
+| `SOUL.md` | Persona definition, ethical boundaries, communication tone |
+| `IDENTITY.md` | Agent name and aesthetic (how the agent introduces itself) |
+| `TOOLS.md` | Tool usage guidance (when and how to use web_fetch, web_search, etc.) |
+| `AGENTS.md` | Operating instructions and inter-agent coordination |
+| `HEARTBEAT.md` | Lightweight periodic checklist (runs on heartbeat interval) |
+| `BOOTSTRAP.md` | One-time first-run setup instructions (auto-deleted after first run) |
+
+You will primarily edit `BOOT.md`, `USER.md`, and `MEMORY.md` to customize the agents for yourself.
+
+---
+
+## Customizing Agents
+
+### Change models
+
+Edit `config/openclaw.json` directly:
+
+```json5
+{
+  agents: {
+    list: [
+      { id: "main", model: "anthropic/claude-haiku-4-5" },  // cheaper
+    ],
+  },
+}
+```
+
+Or use the CLI if OpenClaw is installed via npm:
+
+```bash
+openclaw config get agents.list
+openclaw config set agents.list[0].model "anthropic/claude-haiku-4-5"
+```
+
+### Model format options
+
+The `model` field accepts either a string or an object with fallbacks:
+
+```json5
+// Simple string
+{ id: "sync", model: "anthropic/claude-haiku-4-5" }
+
+// With fallback
+{ id: "main", model: { primary: "anthropic/claude-sonnet-4-6", fallbacks: ["anthropic/claude-haiku-4-5"] } }
+```
+
+### Add or remove tools
+
+Each agent can specify tool permissions:
+
+```json5
+{
+  id: "main",
+  tools: {
+    profile: "full",              // "full" or "minimal"
+    allow: ["web_fetch", "web_search", "memory_search"],
+  },
+}
+```
+
+### Cost optimization
+
+To reduce costs:
+- Switch `main` to Haiku (less capable but much cheaper)
+- Reduce cron frequency (e.g., calendar sync every 30m instead of 15m)
+- Lower the daily budget in `.env` (`LLM_DAILY_BUDGET_USD=3`)
+- Disable unused cron jobs in `config/cron/jobs.json`
+
+Approximate per-model costs:
+- claude-haiku-4-5: $0.80/$4.00 per 1M tokens (input/output)
+- claude-sonnet-4-6: $3.00/$15.00 per 1M tokens
+- claude-opus-4-6: $15.00/$75.00 per 1M tokens

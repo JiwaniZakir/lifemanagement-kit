@@ -1,0 +1,58 @@
+---
+title: Aegis Documentation
+description: Self-hosted personal intelligence platform built on OpenClaw. Aggregate financial, calendar, health, and social data — surfaced through AI agents via WhatsApp.
+---
+
+Welcome to the Aegis documentation. Aegis is a self-hosted personal intelligence platform that aggregates data from financial accounts, calendars, LMS platforms, health devices, and social media — then surfaces actionable insights through WhatsApp via AI agents.
+
+<CardGrid>
+  <FeatureCard
+    title="Setup From Scratch"
+    description="Complete onboarding guide — VPS, Docker, integrations, WhatsApp pairing."
+    href="/docs/getting-started/setup-from-scratch"
+  />
+  <FeatureCard
+    title="Architecture Overview"
+    description="How the 4-service architecture works — OpenClaw, data-api, PostgreSQL, cloudflared."
+    href="/docs/architecture/overview"
+  />
+  <FeatureCard
+    title="Local Development"
+    description="Dev setup, testing, and adding integrations, skills, and hooks."
+    href="/docs/development/local-dev"
+  />
+  <FeatureCard
+    title="Production Deployment"
+    description="Deploy to a Hetzner VPS behind Cloudflare Tunnel with zero public ports."
+    href="/docs/deployment/production"
+  />
+  <FeatureCard
+    title="Security Model"
+    description="Threat model, AES-256-GCM encryption, hash-chained audit log, and PII redaction."
+    href="/docs/security/threat-model"
+  />
+  <FeatureCard
+    title="OpenClaw Guide"
+    description="Understand the OpenClaw platform that powers Aegis agents and automation."
+    href="/docs/getting-started/openclaw-guide"
+  />
+</CardGrid>
+
+## What is Aegis?
+
+Aegis runs on a single VPS with 4 Docker services:
+
+- **OpenClaw Gateway** — the brain. Manages AI agents, scheduling (cron), LLM calls, WhatsApp delivery, web UI, and agent memory.
+- **Data API** — encrypted persistence layer. Stores, encrypts, and retrieves data from 10 integrations.
+- **PostgreSQL** — the database with pgvector for embeddings.
+- **cloudflared** — zero-trust tunnel. No public ports exposed.
+
+Everything runs behind Cloudflare Tunnel with zero public attack surface. Security is the #1 architectural constraint.
+
+## Key Features
+
+- **10 Data Integrations** — Plaid banking, Schwab investments, Canvas LMS, Google Calendar, Outlook, Garmin health, LinkedIn, X, and more
+- **4 AI Agents** — Interactive assistant, background sync, daily briefings, and content generation
+- **8 Skills** — Finance, calendar, LMS, health, social, content, briefing, and security
+- **3 Security Hooks** — PII redaction, budget guardrails, and hash-chained audit logging
+- **8 Scheduled Jobs** — Automated sync, briefings, content publishing, and secret rotation reminders
