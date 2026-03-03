@@ -4,6 +4,7 @@ import { useCallback, useRef } from 'react';
 import { usePlannerStore } from '@/lib/stores/planner-store';
 import { parsePlan } from '@/lib/parse-plan';
 import { BASE_NODES, BASE_EDGES } from '@/lib/architecture-nodes';
+import { StreamingProgress } from './streaming-progress';
 import type { Node, Edge } from '@xyflow/react';
 
 const EXAMPLE_CHIPS = [
@@ -190,15 +191,8 @@ export function StepDescribe() {
         </p>
       )}
 
-      {/* Streaming indicator */}
-      {isStreaming && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#7c6aef]" />
-          <p className="text-[12px] font-light text-[#fff6]">
-            Designing your feature plan...
-          </p>
-        </div>
-      )}
+      {/* Streaming progress visualization */}
+      {isStreaming && <StreamingProgress />}
 
       {error && (
         <p className="mt-3 text-center text-[12px] font-light text-red-400/80">{error}</p>
