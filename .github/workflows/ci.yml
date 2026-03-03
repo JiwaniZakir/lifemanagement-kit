@@ -35,7 +35,7 @@ jobs:
           node-version: "20"
 
       - name: Install TypeScript
-        run: npm install --no-save typescript
+        run: npm install --no-save typescript @types/node
 
       - name: TypeScript type-check hooks
         run: npx tsc --noEmit --esModuleInterop --moduleResolution node --target ES2022 hooks/*/handler.ts
@@ -58,7 +58,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
-      DATA_API_TOKEN: test-token-for-ci
+      DATA_API_TOKEN: test-token-for-ci-at-least-32-chars
       ENCRYPTION_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     steps:
       - uses: actions/checkout@v4
