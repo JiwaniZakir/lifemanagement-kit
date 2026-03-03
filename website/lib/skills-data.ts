@@ -1,6 +1,17 @@
 import type { SkillInfo } from '@/lib/types/planner';
 
-export const AEGIS_SKILLS: SkillInfo[] = [
+export interface WorkflowStep {
+  label: string;
+  detail: string;
+}
+
+export interface SkillDetail extends SkillInfo {
+  workflow: WorkflowStep[];
+  dataFlow: string;
+  example: string;
+}
+
+export const AEGIS_SKILLS: SkillDetail[] = [
   {
     id: 'aegis-finance',
     name: 'Finance',
@@ -10,6 +21,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Transaction sync', 'Portfolio tracking', 'Spending analysis'],
     endpointCount: 6,
     color: '#22c55e',
+    workflow: [
+      { label: 'Connect', detail: 'Link bank accounts via Plaid Link token exchange' },
+      { label: 'Sync', detail: 'Pull transactions and holdings on a cron schedule' },
+      { label: 'Encrypt', detail: 'AES-256-GCM encryption before storing in PostgreSQL' },
+      { label: 'Analyze', detail: 'AI agent queries spending patterns and portfolio performance' },
+      { label: 'Deliver', detail: 'Insights surfaced via WhatsApp on demand or in briefings' },
+    ],
+    dataFlow: 'Plaid/Schwab API \u2192 data-api \u2192 PostgreSQL \u2192 OpenClaw agent \u2192 WhatsApp',
+    example: '"How much did I spend on food this month?" \u2192 $847.32 across 23 transactions',
   },
   {
     id: 'aegis-calendar',
@@ -20,6 +40,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Event sync', 'Free slots', 'Schedule conflicts'],
     endpointCount: 4,
     color: '#3b82f6',
+    workflow: [
+      { label: 'OAuth', detail: 'Connect via Google/Microsoft OAuth 2.0 flow' },
+      { label: 'Fetch', detail: 'Pull events for the next 7-30 days' },
+      { label: 'Merge', detail: 'Combine both calendars into a unified timeline' },
+      { label: 'Detect', detail: 'Find free slots and schedule conflicts automatically' },
+      { label: 'Notify', detail: 'Morning brief includes today\'s schedule and conflicts' },
+    ],
+    dataFlow: 'Google/Outlook API \u2192 data-api \u2192 OpenClaw agent \u2192 WhatsApp',
+    example: '"When am I free tomorrow?" \u2192 10:00-11:30 AM and 2:00-4:00 PM',
   },
   {
     id: 'aegis-lms',
@@ -30,6 +59,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Assignment tracking', 'Grade monitoring', 'Deadline alerts'],
     endpointCount: 3,
     color: '#f59e0b',
+    workflow: [
+      { label: 'Auth', detail: 'Personal access token stored encrypted in credential vault' },
+      { label: 'Scan', detail: 'Pull courses, assignments, and grades via REST API' },
+      { label: 'Track', detail: 'Store deadlines and grade changes in PostgreSQL' },
+      { label: 'Alert', detail: 'Proactive deadline reminders 48h and 24h before due' },
+      { label: 'Report', detail: 'Weekly digest with GPA trends and upcoming work' },
+    ],
+    dataFlow: 'Canvas/Blackboard API \u2192 data-api \u2192 PostgreSQL \u2192 briefing agent \u2192 WhatsApp',
+    example: '"What\'s due this week?" \u2192 3 assignments: CS301 lab (Tue), Math hw (Thu), Essay (Fri)',
   },
   {
     id: 'aegis-health',
@@ -40,6 +78,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Activity metrics', 'Sleep tracking', 'Health goals'],
     endpointCount: 3,
     color: '#ec4899',
+    workflow: [
+      { label: 'Connect', detail: 'Garmin Connect credentials stored encrypted' },
+      { label: 'Pull', detail: 'Daily sync of steps, heart rate, sleep, and body battery' },
+      { label: 'Store', detail: 'Time-series health metrics in PostgreSQL' },
+      { label: 'Goals', detail: 'Track progress against custom health goals' },
+      { label: 'Brief', detail: 'Morning brief includes yesterday\'s activity summary' },
+    ],
+    dataFlow: 'Garmin Connect \u2192 data-api \u2192 PostgreSQL \u2192 briefing agent \u2192 WhatsApp',
+    example: '"How did I sleep?" \u2192 7h 23m, 92% quality, deep sleep 1h 45m',
   },
   {
     id: 'aegis-social',
@@ -50,6 +97,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Post publishing', 'Schedule posts', 'Engagement tracking'],
     endpointCount: 4,
     color: '#7c6aef',
+    workflow: [
+      { label: 'Draft', detail: 'Content agent generates post drafts from strategy' },
+      { label: 'Review', detail: 'User approves or edits via WhatsApp' },
+      { label: 'Schedule', detail: 'Cron job publishes at optimal times' },
+      { label: 'Publish', detail: 'Post to LinkedIn and X via their APIs' },
+      { label: 'Track', detail: 'Monitor engagement metrics after publishing' },
+    ],
+    dataFlow: 'Content agent \u2192 data-api \u2192 LinkedIn/X API \u2192 engagement tracking',
+    example: '"Post my latest article to LinkedIn" \u2192 Published with 3 hashtags, tracking enabled',
   },
   {
     id: 'aegis-content',
@@ -60,6 +116,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Draft generation', 'Editorial review', 'Content strategy'],
     endpointCount: 3,
     color: '#06b6d4',
+    workflow: [
+      { label: 'Strategy', detail: 'Define content pillars and posting frequency' },
+      { label: 'Generate', detail: 'AI drafts posts based on strategy and recent data' },
+      { label: 'Edit', detail: 'User reviews and refines via WhatsApp conversation' },
+      { label: 'Store', detail: 'Draft lifecycle tracked: draft \u2192 review \u2192 approved \u2192 published' },
+      { label: 'Learn', detail: 'Performance data feeds back into strategy' },
+    ],
+    dataFlow: 'Strategy \u2192 content agent \u2192 data-api drafts \u2192 social skill \u2192 publish',
+    example: '"Generate a thought-leadership post about AI agents" \u2192 Draft ready for review',
   },
   {
     id: 'aegis-briefing',
@@ -70,6 +135,15 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['Morning brief', 'Weekly digest', 'Priority alerts'],
     endpointCount: 2,
     color: '#8b7cf7',
+    workflow: [
+      { label: 'Collect', detail: 'Pull latest from finance, calendar, health, LMS, social' },
+      { label: 'Aggregate', detail: 'Merge all data sources into unified context' },
+      { label: 'Prioritize', detail: 'AI ranks items by urgency and importance' },
+      { label: 'Format', detail: 'Compose concise brief with sections and action items' },
+      { label: 'Send', detail: 'Deliver to WhatsApp at 7:00 AM daily, Monday weekly' },
+    ],
+    dataFlow: 'All data sources \u2192 briefing agent \u2192 WhatsApp (cron-scheduled)',
+    example: 'Morning brief: 3 meetings, 2 assignments due, $247 spent yesterday, 8.2k steps',
   },
   {
     id: 'aegis-security',
@@ -80,5 +154,14 @@ export const AEGIS_SKILLS: SkillInfo[] = [
     capabilities: ['PII redaction', 'Audit logging', 'Secret rotation'],
     endpointCount: 3,
     color: '#ef4444',
+    workflow: [
+      { label: 'Guard', detail: 'pii-guard hook scans every outbound message for PII' },
+      { label: 'Redact', detail: 'SSN, cards, emails, phones auto-redacted before delivery' },
+      { label: 'Audit', detail: 'SHA-256 hash-chained log of all agent actions' },
+      { label: 'Encrypt', detail: 'AES-256-GCM with AAD for all stored credentials' },
+      { label: 'Rotate', detail: '90-day secret rotation via automated scripts' },
+    ],
+    dataFlow: 'Agent action \u2192 audit-logger hook \u2192 hash chain \u2192 PostgreSQL',
+    example: 'Outbound "SSN: 123-45-6789" \u2192 auto-redacted to "SSN: ***-**-****"',
   },
 ];
