@@ -129,7 +129,7 @@ jobs:
         run: docker build -f infrastructure/Dockerfile.data-api -t aegis-data-api:test .
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: aegis-data-api:test
           format: table

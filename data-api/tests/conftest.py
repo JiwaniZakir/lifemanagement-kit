@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 
 import pytest
@@ -24,15 +25,23 @@ from app.main import app  # noqa: E402
 AUTH_HEADER = {"Authorization": "Bearer test_data_api_token_0123456789abcdef"}
 
 
+@pytest.fixture(scope="session")
+def event_loop():
+    """Use a single event loop for all tests.
+
+    The SQLAlchemy engine is created at import time and binds its connection
+    pool to the running loop on first use.  Sharing one loop across the
+    entire test session avoids 'Future attached to a different loop' errors
+    when tests hit real Postgres (CI).
+    """
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def _reset_db_engine():
-    """Recreate the SQLAlchemy engine on the test event loop.
-
-    The engine is created at module-import time (before any test loop exists).
-    When a real Postgres is available (CI), connections bind to that import-time
-    loop, causing 'Future attached to a different loop' errors.  Disposing and
-    recreating here ensures the pool lives on the session-scoped test loop.
-    """
+    """Recreate the SQLAlchemy engine on the test event loop."""
     from app import database
 
     await database.engine.dispose()
