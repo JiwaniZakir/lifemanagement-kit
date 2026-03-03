@@ -34,6 +34,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install TypeScript
+        run: npm install --no-save typescript
+
       - name: TypeScript type-check hooks
         run: npx tsc --noEmit --esModuleInterop --moduleResolution node --target ES2022 hooks/*/handler.ts
 
