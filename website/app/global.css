@@ -327,3 +327,61 @@ th {
 .file-pill {
   animation: file-slide 0.3s ease-out forwards;
 }
+
+/* ── Skill modal animations ── */
+.skill-modal-enter .skill-modal-backdrop {
+  opacity: 0;
+}
+.skill-modal-enter .skill-modal-panel {
+  opacity: 0;
+  transform: translateY(40px) scale(0.95);
+}
+
+.skill-modal-enter-active .skill-modal-backdrop {
+  opacity: 1;
+  transition: opacity 0.35s ease-out;
+}
+.skill-modal-enter-active .skill-modal-panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 0.35s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.skill-modal-exit .skill-modal-backdrop {
+  opacity: 0;
+  transition: opacity 0.3s ease-in;
+}
+.skill-modal-exit .skill-modal-panel {
+  opacity: 0;
+  transform: translateY(30px) scale(0.97);
+  transition: opacity 0.25s ease-in, transform 0.3s ease-in;
+}
+
+/* Workflow step animations */
+@keyframes step-dot-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes step-line-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes step-content-slide {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.skill-step-dot {
+  animation: step-dot-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.skill-step-line {
+  transform-origin: top;
+  animation: step-line-grow 0.3s ease-out both;
+}
+
+.skill-step-content {
+  animation: step-content-slide 0.4s ease-out both;
+}
