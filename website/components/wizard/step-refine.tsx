@@ -126,16 +126,23 @@ export function StepRefine() {
               isStreaming={false}
               prompt=""
               onSubmit={() => setStep(4)}
+              hideSubmitButton
             />
           </div>
         )}
       </div>
 
-      {/* Continue button */}
-      <div className="flex justify-center">
+      {/* Actions */}
+      <div className="flex items-center justify-center gap-3">
+        <button
+          onClick={() => setStep(2)}
+          className="rounded-lg border border-[#ffffff14] px-5 py-2 text-[12px] font-light text-[#fff9] transition-all hover:border-[#ffffff26] hover:text-white"
+        >
+          Back
+        </button>
         <button
           onClick={() => setStep(4)}
-          className="rounded-lg bg-white/90 px-6 py-2 text-[12px] font-medium text-black transition-all hover:bg-white"
+          className="rounded-lg bg-white/90 px-5 py-2 text-[12px] font-medium text-black transition-all hover:bg-white"
         >
           Continue to Submit
         </button>

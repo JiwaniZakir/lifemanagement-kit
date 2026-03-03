@@ -26,7 +26,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export function SkillsShowcase() {
   return (
-    <section id="skills" className="mx-auto w-full max-w-4xl px-6 py-16">
+    <section id="skills" className="mx-auto w-full max-w-4xl px-6 py-12">
       <div className="mb-8 text-center">
         <h2 className="text-[clamp(1.5rem,3vw,2.25rem)] font-normal tracking-tight text-white">
           Capabilities

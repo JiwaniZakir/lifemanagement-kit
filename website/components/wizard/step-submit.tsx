@@ -29,6 +29,7 @@ export function StepSubmit() {
     setSubmissionResult,
     submissionError,
     setSubmissionError,
+    setStep,
     reset,
   } = usePlannerStore();
 
@@ -79,11 +80,14 @@ export function StepSubmit() {
         2,
       );
 
+      const editDesc = usePlannerStore.getState().editableDescription;
+
       const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
+          description: editDesc.trim() || undefined,
           request: prompt,
           plan: rawText,
           submitter: submitterName.trim(),
@@ -126,13 +130,13 @@ export function StepSubmit() {
   if (submissionResult) {
     const tier = getContributorTier(submissionCount);
     const tweetText = encodeURIComponent(
-      `I just proposed a feature for @AegisIntel! Check it out: ${submissionResult.url}`,
+      `I just proposed a feature for Aegis! Check it out: ${submissionResult.url}`,
     );
 
     return (
       <div className="mx-auto w-full max-w-md text-center">
         {/* Confetti burst */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
           {Array.from({ length: 15 }).map((_, i) => (
             <div
               key={i}
@@ -317,13 +321,21 @@ export function StepSubmit() {
             <p className="text-[12px] text-red-400/80">{submissionError}</p>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={!submitterName.trim() || isSubmitting}
-            className="w-full rounded-lg bg-white/90 px-4 py-2.5 text-[12px] font-medium text-black transition-all hover:bg-white disabled:opacity-40"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Feature Request'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStep(3)}
+              className="rounded-lg border border-[#ffffff14] px-4 py-2.5 text-[12px] font-light text-[#fff9] transition-all hover:border-[#ffffff26] hover:text-white"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!submitterName.trim() || isSubmitting}
+              className="flex-1 rounded-lg bg-white/90 px-4 py-2.5 text-[12px] font-medium text-black transition-all hover:bg-white disabled:opacity-40"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Feature Request'}
+            </button>
+          </div>
         </div>
 
         {submissionCount > 0 && (

@@ -156,7 +156,7 @@ export function StepDescribe() {
           <button
             onClick={handleSubmit}
             disabled={!prompt.trim() || isStreaming}
-            className="shrink-0 rounded-[0.8em] bg-white/90 px-4 py-2 text-[12px] font-medium leading-[12px] text-black transition-all hover:bg-white disabled:opacity-30"
+            className="shrink-0 rounded-lg bg-white/90 px-5 py-2 text-[12px] font-medium leading-[12px] text-black transition-all hover:bg-white disabled:opacity-30"
           >
             {isStreaming ? 'Planning...' : 'Plan'}
           </button>

@@ -29,22 +29,20 @@ export function FeatureWizard() {
   };
 
   return (
-    <section className="animate-fade-up-delay-3 mx-auto w-full max-w-3xl px-6 pb-32">
+    <section className="animate-fade-up-delay-3 mx-auto w-full max-w-3xl px-6 pb-16">
       {/* Section label */}
       <p className="mb-3 text-center text-[14px] font-light leading-[16px] text-[#fff6]">
         Feature Planner
       </p>
 
       {/* Progress dots */}
-      {step > 1 && (
-        <div className="mb-6">
-          <WizardProgress
-            currentStep={step}
-            onStepClick={handleStepClick}
-            completedSteps={completedSteps}
-          />
-        </div>
-      )}
+      <div className="mb-6">
+        <WizardProgress
+          currentStep={step}
+          onStepClick={handleStepClick}
+          completedSteps={completedSteps}
+        />
+      </div>
 
       {/* Step content */}
       {step === 1 && <StepDescribe />}

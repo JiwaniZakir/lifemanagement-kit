@@ -5,7 +5,7 @@ import Script from 'next/script';
 
 export function HeroSection() {
   return (
-    <section className="relative flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+    <section className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden px-6 text-center">
       {/* Spline 3D element */}
       <Script
         type="module"
@@ -13,6 +13,13 @@ export function HeroSection() {
         strategy="lazyOnload"
       />
       <div className="pointer-events-auto absolute left-1/2 top-1/2 -z-0 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 opacity-90 sm:h-[700px] sm:w-[700px] lg:h-[800px] lg:w-[800px]">
+        {/* Gradient orb fallback while Spline loads */}
+        <div
+          className="gradient-orb absolute left-1/2 top-1/2 h-[60%] w-[60%] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, #7c6aef40 0%, #7c6aef10 50%, transparent 70%)',
+          }}
+        />
         {/* @ts-expect-error — spline-viewer is a web component loaded via script */}
         <spline-viewer
           url="https://prod.spline.design/LEvjG3OETYd2GsRw/scene.splinecode"

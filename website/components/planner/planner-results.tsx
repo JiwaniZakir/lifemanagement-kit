@@ -40,6 +40,7 @@ interface PlannerResultsProps {
   isStreaming: boolean;
   prompt: string;
   onSubmit: () => void;
+  hideSubmitButton?: boolean;
 }
 
 export function PlannerResults({
@@ -47,6 +48,7 @@ export function PlannerResults({
   isStreaming,
   prompt,
   onSubmit,
+  hideSubmitButton,
 }: PlannerResultsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('full');
 
@@ -79,8 +81,8 @@ export function PlannerResults({
         />
       </div>
 
-      {/* Submit button */}
-      {!isStreaming && text.length > 0 && (
+      {/* Submit button — hidden when embedded in wizard */}
+      {!isStreaming && text.length > 0 && !hideSubmitButton && (
         <div className="border-t border-[#ffffff0d] px-5 py-3">
           <button
             onClick={onSubmit}
