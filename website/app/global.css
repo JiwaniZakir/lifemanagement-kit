@@ -286,17 +286,3 @@ th {
 ::-webkit-scrollbar-thumb:hover {
   background: #ffffff26;
 }
-
-/* ── Spline viewer transparent background ── */
-spline-viewer {
-  --spline-viewer-bg: transparent !important;
-  background: transparent !important;
-}
-
-spline-viewer::part(canvas) {
-  background: transparent !important;
-}
-
-spline-viewer canvas {
-  background: transparent !important;
-}
