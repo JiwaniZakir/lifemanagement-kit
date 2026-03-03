@@ -12,28 +12,26 @@ export function HeroSection() {
         src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"
         strategy="lazyOnload"
       />
-      <div className="pointer-events-auto absolute left-1/2 top-1/2 -z-0 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 opacity-90 sm:h-[700px] sm:w-[700px] lg:h-[800px] lg:w-[800px]">
-        {/* Gradient orb fallback while Spline loads */}
-        <div
-          className="gradient-orb absolute left-1/2 top-1/2 h-[60%] w-[60%] rounded-full"
-          style={{
-            background: 'radial-gradient(circle, #7c6aef40 0%, #7c6aef10 50%, transparent 70%)',
-          }}
-        />
-        {/* @ts-expect-error — spline-viewer is a web component loaded via script */}
-        <spline-viewer
-          url="/polaroid_go_copy.spline"
-          style={{ width: '100%', height: '100%' }}
-        />
+
+      {/* Title with Spline object on top */}
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Spline 3D — sits directly above the title, no background */}
+        <div className="pointer-events-auto relative h-[250px] w-[250px] sm:h-[300px] sm:w-[300px]">
+          {/* @ts-expect-error — spline-viewer is a web component loaded via script */}
+          <spline-viewer
+            url="/polaroid_go_copy.spline"
+            style={{
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+            }}
+          />
+        </div>
+
+        <h1 className="animate-fade-up -mt-4 text-[clamp(2.5rem,6vw,4.5rem)] font-normal tracking-tight text-white">
+          Aegis
+        </h1>
       </div>
-
-      {/* Bottom gradient overlay for text readability */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black to-transparent" />
-
-      {/* Title */}
-      <h1 className="animate-fade-up relative z-10 text-[clamp(2.5rem,6vw,4.5rem)] font-normal tracking-tight text-white">
-        Aegis
-      </h1>
 
       {/* Subtitle */}
       <p className="animate-fade-up-delay relative z-10 mt-4 max-w-md text-[clamp(12px,0.9vw,15px)] font-light leading-[1.7] text-[#fff9]">
