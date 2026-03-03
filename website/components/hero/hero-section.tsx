@@ -22,7 +22,7 @@ export function HeroSection() {
         />
         {/* @ts-expect-error — spline-viewer is a web component loaded via script */}
         <spline-viewer
-          url="https://prod.spline.design/LEvjG3OETYd2GsRw/scene.splinecode"
+          url="/polaroid_go_copy.spline"
           style={{ width: '100%', height: '100%' }}
         />
       </div>
