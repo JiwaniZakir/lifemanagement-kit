@@ -1,6 +1,9 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import { Manrope } from 'next/font/google';
 import type { Metadata } from 'next';
+import { SessionProvider } from '@/components/auth/session-provider';
+import { PostHogProvider } from '@/components/analytics/posthog-provider';
+import { IdentifyUser } from '@/components/analytics/identify-user';
 import './global.css';
 
 const manrope = Manrope({
@@ -32,14 +35,19 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.className} dark`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col bg-black text-[#ffffffcc]">
-        <RootProvider
-          theme={{
-            defaultTheme: 'dark',
-            forcedTheme: 'dark',
-          }}
-        >
-          {children}
-        </RootProvider>
+        <SessionProvider>
+          <PostHogProvider>
+            <IdentifyUser />
+            <RootProvider
+              theme={{
+                defaultTheme: 'dark',
+                forcedTheme: 'dark',
+              }}
+            >
+              {children}
+            </RootProvider>
+          </PostHogProvider>
+        </SessionProvider>
       </body>
     </html>
   );

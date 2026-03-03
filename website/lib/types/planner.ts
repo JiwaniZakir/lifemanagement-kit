@@ -92,3 +92,10 @@ export interface SkillInfo {
   endpointCount: number;
   color: string;
 }
+
+export interface ForkResult {
+  forkUrl: string;
+  branchUrl: string;
+  branchName: string;
+  filesCreated: string[];
+}

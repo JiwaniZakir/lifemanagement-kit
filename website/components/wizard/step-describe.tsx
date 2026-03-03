@@ -45,6 +45,13 @@ export function StepDescribe() {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // Auto-abort after 60 seconds to prevent indefinite hang
+    const timeout = setTimeout(() => {
+      controller.abort();
+      setError('Plan generation timed out. Please try again.');
+      setIsStreaming(false);
+    }, 60_000);
+
     let fullText = '';
 
     try {
@@ -129,6 +136,7 @@ export function StepDescribe() {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       setError('Connection failed. Please try again.');
     } finally {
+      clearTimeout(timeout);
       setIsStreaming(false);
     }
   }, [prompt, isStreaming, setError, setIsStreaming, appendText, setPlan, setDiagramNodes, setDiagramEdges, setStep]);

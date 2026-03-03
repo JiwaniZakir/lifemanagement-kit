@@ -3,6 +3,7 @@ import type {
   WizardStep,
   StructuredPlan,
   SubmissionResult,
+  ForkResult,
 } from '@/lib/types/planner';
 import type { Node, Edge } from '@xyflow/react';
 
@@ -51,6 +52,14 @@ interface PlannerState {
   submissionError: string;
   setSubmissionError: (error: string) => void;
 
+  // Fork
+  isForkInProgress: boolean;
+  setIsForkInProgress: (inProgress: boolean) => void;
+  forkResult: ForkResult | null;
+  setForkResult: (result: ForkResult | null) => void;
+  forkError: string;
+  setForkError: (error: string) => void;
+
   // Reset
   reset: () => void;
 }
@@ -72,6 +81,9 @@ const initialState = {
   isSubmitting: false,
   submissionResult: null,
   submissionError: '',
+  isForkInProgress: false,
+  forkResult: null,
+  forkError: '',
 };
 
 export const usePlannerStore = create<PlannerState>((set) => ({
@@ -102,6 +114,9 @@ export const usePlannerStore = create<PlannerState>((set) => ({
   setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
   setSubmissionResult: (submissionResult) => set({ submissionResult }),
   setSubmissionError: (submissionError) => set({ submissionError }),
+  setIsForkInProgress: (isForkInProgress) => set({ isForkInProgress }),
+  setForkResult: (forkResult) => set({ forkResult }),
+  setForkError: (forkError) => set({ forkError }),
 
   reset: () => set(initialState),
 }));

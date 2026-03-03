@@ -34,6 +34,12 @@ export function HeroSection() {
       {/* CTAs */}
       <div className="animate-fade-up-delay-3 relative z-10 flex items-center gap-4">
         <Link
+          href="/deploy"
+          className="rounded-lg bg-[#7c6aef] px-5 py-2 text-[12px] font-medium leading-[12px] text-white transition-all hover:bg-[#6b5bd6]"
+        >
+          Deploy Now
+        </Link>
+        <Link
           href="/docs/getting-started/setup-from-scratch"
           className="rounded-lg bg-white/90 px-5 py-2 text-[12px] font-medium leading-[12px] text-black transition-all hover:bg-white"
         >

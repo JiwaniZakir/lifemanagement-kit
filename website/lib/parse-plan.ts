@@ -190,13 +190,26 @@ function getParentServiceId(type: FileChange['type']): string | null {
 
 // ── Section extraction ──
 
-function extractSection(text: string, heading: string): string {
+export function extractSection(text: string, heading: string): string {
   const pattern = new RegExp(
     `###?\\s*${heading}[\\s\\S]*?(?=\\n###?\\s[A-Z]|$)`,
     'i',
   );
   const match = text.match(pattern);
   return match ? match[0].trim() : '';
+}
+
+export function extractCodeBlocks(text: string, lang?: string): { lang: string; code: string }[] {
+  const regex = /```(\w*)\s*\n([\s\S]*?)\n```/g;
+  const blocks: { lang: string; code: string }[] = [];
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const blockLang = match[1] || 'text';
+    if (!lang || blockLang === lang) {
+      blocks.push({ lang: blockLang, code: match[2].trim() });
+    }
+  }
+  return blocks;
 }
 
 function extractAllSections(text: string): Record<string, string> {

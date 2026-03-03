@@ -1,5 +1,6 @@
 import { createFeatureIssue } from '@/lib/github';
 import { NextRequest } from 'next/server';
+import { submitBodySchema } from '@/lib/validations';
 
 // Rate limiter with automatic cleanup: 3 submissions per hour per IP
 const submitLimitMap = new Map<string, number[]>();
@@ -53,35 +54,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: {
-    title: string;
-    request: string;
-    plan: string;
-    submitter: string;
-    notes?: string;
-    diagramJson?: string;
-  };
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return Response.json({ error: 'Invalid request body.' }, { status: 400 });
   }
 
-  const { title, request: featureRequest, plan, submitter, notes, diagramJson } = body;
-
-  if (!title || !featureRequest || !plan || !submitter) {
+  const parsed = submitBodySchema.safeParse(rawBody);
+  if (!parsed.success) {
     return Response.json(
-      { error: 'All fields are required: title, request, plan, submitter.' },
+      { error: parsed.error.issues[0]?.message ?? 'Validation failed.' },
       { status: 400 },
     );
   }
 
-  if (title.length > 200 || submitter.length > 100) {
-    return Response.json(
-      { error: 'Title or name too long.' },
-      { status: 400 },
-    );
-  }
+  const { title, request: featureRequest, plan, submitter, notes, diagramJson } = parsed.data;
 
   try {
     const result = await createFeatureIssue({
