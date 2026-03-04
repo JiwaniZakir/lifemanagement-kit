@@ -23,6 +23,7 @@ from app.api.finance import router as finance_router
 from app.api.health import router as health_router
 from app.api.lms import router as lms_router
 from app.api.social import router as social_router
+from app.api.spotify import router as spotify_router
 from app.config import get_settings
 from app.database import async_session_factory
 from app.logging import configure_logging
@@ -148,6 +149,7 @@ def create_app() -> FastAPI:
     app.include_router(budget_router, prefix="/budget", dependencies=[Depends(verify_token)])
     app.include_router(briefing_router, prefix="/briefing", dependencies=[Depends(verify_token)])
     app.include_router(content_router, prefix="/content", dependencies=[Depends(verify_token)])
+    app.include_router(spotify_router, dependencies=[Depends(verify_token)])
 
     return app
 
