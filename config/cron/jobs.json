@@ -162,6 +162,28 @@
       }
     },
     {
+      "jobId": "sync-spotify",
+      "agentId": "sync",
+      "name": "Sync Spotify",
+      "description": "Pull recently played tracks and top artist/track snapshots from Spotify",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "*/30 * * * *",
+        "tz": "America/New_York"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Execute Spotify listening history sync. Call POST http://data-api:8000/spotify/sync with header Authorization: Bearer ${DATA_API_TOKEN}. Report only if errors occur.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "none"
+      }
+    },
+    {
       "jobId": "security-audit",
       "agentId": "briefing",
       "name": "Weekly Security Audit",
