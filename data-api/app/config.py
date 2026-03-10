@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     x_access_token_secret: str = ""
     x_bearer_token: str = ""
 
+    # --- Spotify ---
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+
     # --- Garmin ---
     garmin_email: str = ""
     garmin_password: str = ""
