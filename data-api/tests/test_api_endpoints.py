@@ -30,6 +30,10 @@ _PROTECTED_ROUTES = [
     ("POST", "/content/generate"),
     ("GET", "/content/drafts"),
     ("GET", "/content/queue"),
+    ("GET", "/spotify/plays/recent"),
+    ("GET", "/spotify/plays/stats"),
+    ("GET", "/spotify/top"),
+    ("POST", "/spotify/sync"),
 ]
 
 
