@@ -75,6 +75,10 @@ class Settings(BaseSettings):
     garmin_email: str = ""
     garmin_password: str = ""
 
+    # --- Spotify ---
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+
     # --- Health Goals ---
     daily_protein_target_g: int = 175
     daily_calorie_limit: int = 1900
